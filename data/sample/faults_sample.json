@@ -1,0 +1,26 @@
+[
+  {
+    "fault_id": "FLT-20260730-01",
+    "pole_id": "POLE-103",
+    "feeder_line_id": "FEEDER-A",
+    "fault_type": "SHORT_CIRCUIT_TO_GROUND",
+    "severity": "CRITICAL",
+    "detected_at": "2026-07-30T10:41:58Z",
+    "voltage_drop_v": 230.0,
+    "surge_current_a": 145.8,
+    "status": "OPEN",
+    "ticket_id": "TCK-8801"
+  },
+  {
+    "fault_id": "FLT-20260730-02",
+    "pole_id": "POLE-102",
+    "feeder_line_id": "FEEDER-A",
+    "fault_type": "UNDER_VOLTAGE_SAG",
+    "severity": "WARNING",
+    "detected_at": "2026-07-30T10:42:12Z",
+    "voltage_drop_v": 15.3,
+    "surge_current_a": 18.9,
+    "status": "INVESTIGATING",
+    "ticket_id": "TCK-8802"
+  }
+]

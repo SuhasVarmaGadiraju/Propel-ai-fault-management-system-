@@ -1,0 +1,42 @@
+[
+  {
+    "telemetry_id": "TEL-20260730-001",
+    "pole_id": "POLE-101",
+    "timestamp": "2026-07-30T10:42:15Z",
+    "voltage_v": 230.4,
+    "current_a": 14.2,
+    "frequency_hz": 50.0,
+    "temperature_c": 34.5,
+    "status": "NORMAL"
+  },
+  {
+    "telemetry_id": "TEL-20260730-002",
+    "pole_id": "POLE-102",
+    "timestamp": "2026-07-30T10:42:12Z",
+    "voltage_v": 215.1,
+    "current_a": 18.9,
+    "frequency_hz": 49.8,
+    "temperature_c": 38.2,
+    "status": "WARNING"
+  },
+  {
+    "telemetry_id": "TEL-20260730-003",
+    "pole_id": "POLE-103",
+    "timestamp": "2026-07-30T10:41:58Z",
+    "voltage_v": 0.0,
+    "current_a": 145.8,
+    "frequency_hz": 0.0,
+    "temperature_c": 62.1,
+    "status": "FAULT"
+  },
+  {
+    "telemetry_id": "TEL-20260730-004",
+    "pole_id": "POLE-104",
+    "timestamp": "2026-07-30T10:41:45Z",
+    "voltage_v": 229.8,
+    "current_a": 12.5,
+    "frequency_hz": 50.1,
+    "temperature_c": 32.0,
+    "status": "NORMAL"
+  }
+]
