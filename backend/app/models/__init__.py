@@ -6,12 +6,15 @@ from app.models.enums import (
     DeviceStatus,
     PoleType,
     TelemetryEvent,
+    TicketStatus,
+    TicketPriority,
 )
 from app.models.feeder import Feeder
 from app.models.transformer import Transformer
 from app.models.pole import Pole
 from app.models.device import Device
 from app.models.telemetry import Telemetry
+from app.models.ticket import Ticket
 
 __all__ = [
     "BaseModel",
@@ -21,9 +24,12 @@ __all__ = [
     "DeviceStatus",
     "PoleType",
     "TelemetryEvent",
+    "TicketStatus",
+    "TicketPriority",
     "Feeder",
     "Transformer",
     "Pole",
     "Device",
     "Telemetry",
+    "Ticket",
 ]

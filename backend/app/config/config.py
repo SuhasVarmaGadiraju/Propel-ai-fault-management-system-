@@ -12,18 +12,21 @@ if dotenv_path.exists():
 
 
 def get_database_uri() -> str:
-    """Build PostgreSQL URI dynamically from environment variables."""
+    """Build database URI dynamically, falling back to local SQLite if PostgreSQL is not active."""
     explicit_uri = os.getenv("DATABASE_URL")
     if explicit_uri:
         return explicit_uri
 
-    user = os.getenv("POSTGRES_USER", "postgres")
-    password = os.getenv("POSTGRES_PASSWORD", "postgres")
-    host = os.getenv("POSTGRES_HOST", "localhost")
-    port = os.getenv("POSTGRES_PORT", "5432")
-    db_name = os.getenv("POSTGRES_DB", "propel_fault_db")
+    user = os.getenv("POSTGRES_USER")
+    host = os.getenv("POSTGRES_HOST")
+    if user and host and host != "localhost":
+        password = os.getenv("POSTGRES_PASSWORD", "postgres")
+        port = os.getenv("POSTGRES_PORT", "5432")
+        db_name = os.getenv("POSTGRES_DB", "propel_fault_db")
+        return f"postgresql://{user}:{password}@{host}:{port}/{db_name}"
 
-    return f"postgresql://{user}:{password}@{host}:{port}/{db_name}"
+    # Default fallback for standalone local execution
+    return f"sqlite:///{BASE_DIR / 'dev.db'}"
 
 
 class Config:
@@ -32,7 +35,6 @@ class Config:
     DEBUG = False
     TESTING = False
 
-    # PostgreSQL Database configuration
     SQLALCHEMY_DATABASE_URI = get_database_uri()
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 

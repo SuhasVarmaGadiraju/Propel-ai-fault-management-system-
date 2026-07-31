@@ -17,7 +17,7 @@ class Telemetry(BaseModel):
     Represents raw time-series telemetry events transmitted from physical Devices on Poles.
     
     Indexes are explicitly created on (pole_id), (device_id), (event_timestamp), and (sequence_number)
-    for high-speed querying during real-time fault detection processing.
+    for high-speed querying during telemetry processing and fault detection.
     """
     __tablename__ = "telemetry"
 
@@ -41,6 +41,7 @@ class Telemetry(BaseModel):
     )
     energized: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     sequence_number: Mapped[int] = mapped_column(Integer, index=True, nullable=False)
+    out_of_order: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False, index=True)
 
     battery_mv: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     rssi: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
@@ -66,7 +67,8 @@ class Telemetry(BaseModel):
         Index("idx_telemetry_device_id", "device_id"),
         Index("idx_telemetry_event_timestamp", "event_timestamp"),
         Index("idx_telemetry_sequence_number", "sequence_number"),
+        Index("idx_telemetry_device_seq", "device_id", "sequence_number", unique=True),
     )
 
     def __repr__(self) -> str:
-        return f"<Telemetry Pole:{self.pole_id} Event:{self.event.value} Seq:{self.sequence_number} Time:{self.event_timestamp}>"
+        return f"<Telemetry Pole:{self.pole_id} Event:{self.event.value} Seq:{self.sequence_number} OutOfOrder:{self.out_of_order}>"

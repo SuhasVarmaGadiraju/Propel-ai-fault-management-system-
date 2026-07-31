@@ -3,6 +3,13 @@ import { Routes, Route } from 'react-router-dom';
 import MainLayout from '../layouts/MainLayout';
 import Dashboard from '../pages/Dashboard';
 import PoleRegistry from '../pages/PoleRegistry';
+import NetworkExplorer from '../pages/NetworkExplorer';
+import TelemetryPage from '../pages/Telemetry';
+import TelemetryTester from '../pages/TelemetryTester';
+import FaultsPage from '../pages/FaultsPage';
+import TicketsPage from '../pages/TicketsPage';
+import AnalyticsPlaceholder from '../pages/AnalyticsPlaceholder';
+import SettingsPlaceholder from '../pages/SettingsPlaceholder';
 import NotFound from '../pages/NotFound';
 
 /**
@@ -14,6 +21,13 @@ const AppRoutes = () => {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/poles" element={<PoleRegistry />} />
+        <Route path="/network-explorer" element={<NetworkExplorer />} />
+        <Route path="/telemetry" element={<TelemetryPage />} />
+        <Route path="/telemetry-tester" element={<TelemetryTester />} />
+        <Route path="/faults" element={<FaultsPage />} />
+        <Route path="/tickets" element={<TicketsPage />} />
+        <Route path="/analytics" element={<AnalyticsPlaceholder />} />
+        <Route path="/settings" element={<SettingsPlaceholder />} />
         {/* Fallback 404 Route */}
         <Route path="*" element={<NotFound />} />
       </Routes>

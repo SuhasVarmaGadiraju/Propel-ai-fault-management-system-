@@ -8,12 +8,17 @@ import {
   FiBarChart2,
   FiSettings,
   FiX,
-  FiCpu
+  FiCpu,
+  FiTerminal,
+  FiGitBranch
 } from 'react-icons/fi';
 
 const navItems = [
   { name: 'Dashboard', path: '/', icon: FiGrid },
+  { name: 'Pole Registry', path: '/poles', icon: FiCpu },
+  { name: 'Network Explorer', path: '/network-explorer', icon: FiGitBranch, badge: 'Graph' },
   { name: 'Telemetry', path: '/telemetry', icon: FiZap, badge: 'Live' },
+  { name: 'Telemetry Tester', path: '/telemetry-tester', icon: FiTerminal, badge: 'Dev' },
   { name: 'Fault Detection', path: '/faults', icon: FiAlertTriangle, badge: '3' },
   { name: 'Repair Tickets', path: '/tickets', icon: FiClipboard },
   { name: 'Analytics', path: '/analytics', icon: FiBarChart2 },

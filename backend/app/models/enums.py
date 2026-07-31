@@ -43,9 +43,37 @@ class PoleType(str, enum.Enum):
 
 
 class TelemetryEvent(str, enum.Enum):
-    """Telemetry data event type enum."""
-    HEARTBEAT = "HEARTBEAT"
-    POWER_OUTAGE = "POWER_OUTAGE"
-    POWER_RESTORED = "POWER_RESTORED"
-    FAULT_DETECTED = "FAULT_DETECTED"
-    LOW_BATTERY = "LOW_BATTERY"
+    """Telemetry data event type enum matching assignment specification."""
+    HEARTBEAT = "heartbeat"
+    POWER_LOST = "power_lost"
+    POWER_RESTORED = "power_restored"
+    BOOT = "boot"
+    FAULT_DETECTED = "fault_detected"
+    LOW_BATTERY = "low_battery"
+
+    @classmethod
+    def from_string(cls, val: str) -> "TelemetryEvent":
+        """Normalize event string (e.g., 'power_lost', 'POWER_LOST', 'heartbeat')."""
+        normalized = val.strip().lower()
+        for item in cls:
+            if item.value == normalized or item.name.lower() == normalized:
+                return item
+        return cls.HEARTBEAT
+
+
+class TicketStatus(str, enum.Enum):
+    """Repair ticket lifecycle state enum."""
+    NEW = "NEW"
+    ACKNOWLEDGED = "ACKNOWLEDGED"
+    ASSIGNED = "ASSIGNED"
+    RESOLVED = "RESOLVED"
+    VERIFIED = "VERIFIED"
+    CLOSED = "CLOSED"
+
+
+class TicketPriority(str, enum.Enum):
+    """Repair ticket priority level enum."""
+    LOW = "LOW"
+    MEDIUM = "MEDIUM"
+    HIGH = "HIGH"
+    CRITICAL = "CRITICAL"
