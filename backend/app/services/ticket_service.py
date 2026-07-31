@@ -42,33 +42,55 @@ class TicketService:
     def process_fault_incidents(cls, incidents: List[Dict[str, Any]]) -> List[Ticket]:
         """
         Consumes localized fault incidents and automatically creates repair tickets.
-        Prevents duplicate tickets for active non-closed incidents.
+        If an active non-closed ticket already exists for an incident/location, returns that active ticket.
+        Prevents duplicate ticket creation.
         """
-        created_tickets: List[Ticket] = []
+        result_tickets: List[Ticket] = []
 
         for inc in incidents:
             incident_id = inc.get("incident_id")
-            if not incident_id:
-                continue
-
-            # Duplicate Prevention 1: Check existing ticket for exact incident_id
-            existing_ticket = Ticket.query.filter_by(incident_id=incident_id).first()
-            if existing_ticket:
-                continue
-
-            # Duplicate Prevention 2: Check active ticket for same downstream pole or transformer
             downstream = inc.get("downstream_pole")
             tr_code = inc.get("transformer_code")
-            if downstream:
-                active_duplicate = Ticket.query.filter(
+            feeder_code = inc.get("feeder_code")
+            fault_type = inc.get("fault_type")
+
+            # Check 1: Existing active ticket for exact incident_id
+            active_ticket = None
+            if incident_id:
+                active_ticket = Ticket.query.filter(
+                    Ticket.incident_id == incident_id,
+                    Ticket.status != TicketStatus.CLOSED
+                ).first()
+
+            # Check 2: Existing active ticket for same downstream pole (Span Fault)
+            if not active_ticket and downstream:
+                active_ticket = Ticket.query.filter(
                     Ticket.downstream_pole == downstream,
                     Ticket.status != TicketStatus.CLOSED
                 ).first()
-                if active_duplicate:
-                    continue
 
-            # Generate Ticket Number
-            count = Ticket.query.count() + len(created_tickets) + 1
+            # Check 3: Existing active ticket for same transformer (Transformer Fault)
+            if not active_ticket and fault_type == "TRANSFORMER_FAULT" and tr_code:
+                active_ticket = Ticket.query.filter(
+                    Ticket.transformer_code == tr_code,
+                    Ticket.fault_type == "TRANSFORMER_FAULT",
+                    Ticket.status != TicketStatus.CLOSED
+                ).first()
+
+            # Check 4: Existing active ticket for same feeder (Feeder Fault)
+            if not active_ticket and fault_type == "FEEDER_FAULT" and feeder_code:
+                active_ticket = Ticket.query.filter(
+                    Ticket.feeder_code == feeder_code,
+                    Ticket.fault_type == "FEEDER_FAULT",
+                    Ticket.status != TicketStatus.CLOSED
+                ).first()
+
+            if active_ticket:
+                result_tickets.append(active_ticket)
+                continue
+
+            # Create NEW Ticket if no active non-closed ticket exists!
+            count = Ticket.query.count() + len(result_tickets) + 1
             ticket_num = f"TKT-2026-{count:04d}"
 
             priority = cls.calculate_priority(
@@ -77,9 +99,8 @@ class TicketService:
                 confidence=inc.get("confidence", 100)
             )
 
-            # Resolve Feeder and Transformer UUIDs
-            feeder_obj = Feeder.query.filter_by(feeder_code=inc.get("feeder_code")).first() if inc.get("feeder_code") else None
-            tr_obj = Transformer.query.filter_by(transformer_code=inc.get("transformer_code")).first() if inc.get("transformer_code") else None
+            feeder_obj = Feeder.query.filter_by(feeder_code=feeder_code).first() if feeder_code else None
+            tr_obj = Transformer.query.filter_by(transformer_code=tr_code).first() if tr_code else None
 
             reason_summary = inc.get("reason", "")
             if inc.get("reasoning") and isinstance(inc["reasoning"], list):
@@ -87,14 +108,14 @@ class TicketService:
 
             ticket = Ticket(
                 ticket_number=ticket_num,
-                incident_id=incident_id,
+                incident_id=incident_id or f"INC-{ticket_num}",
                 fault_type=inc.get("fault_type", "SPAN_FAULT"),
                 feeder_id=feeder_obj.id if feeder_obj else None,
-                feeder_code=inc.get("feeder_code"),
+                feeder_code=feeder_code,
                 transformer_id=tr_obj.id if tr_obj else None,
-                transformer_code=inc.get("transformer_code"),
+                transformer_code=tr_code,
                 upstream_pole=inc.get("upstream_pole"),
-                downstream_pole=inc.get("downstream_pole"),
+                downstream_pole=downstream,
                 priority=priority,
                 status=TicketStatus.NEW,
                 estimated_households=inc.get("estimated_households", 0),
@@ -104,13 +125,13 @@ class TicketService:
             )
 
             db.session.add(ticket)
-            created_tickets.append(ticket)
+            result_tickets.append(ticket)
 
-        if created_tickets:
+        if result_tickets:
             db.session.commit()
-            logger.info(f"Auto-generated {len(created_tickets)} new repair tickets from fault analysis.")
+            logger.info(f"Processed {len(result_tickets)} repair tickets from fault analysis.")
 
-        return created_tickets
+        return result_tickets
 
     @classmethod
     def get_ticket(cls, ticket_ref: str) -> Optional[Ticket]:

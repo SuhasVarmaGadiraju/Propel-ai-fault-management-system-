@@ -8,7 +8,7 @@ import TelemetryPage from '../pages/Telemetry';
 import TelemetryTester from '../pages/TelemetryTester';
 import FaultsPage from '../pages/FaultsPage';
 import TicketsPage from '../pages/TicketsPage';
-import AnalyticsPlaceholder from '../pages/AnalyticsPlaceholder';
+import FaultSimulator from '../pages/FaultSimulator';
 import SettingsPlaceholder from '../pages/SettingsPlaceholder';
 import NotFound from '../pages/NotFound';
 
@@ -26,7 +26,8 @@ const AppRoutes = () => {
         <Route path="/telemetry-tester" element={<TelemetryTester />} />
         <Route path="/faults" element={<FaultsPage />} />
         <Route path="/tickets" element={<TicketsPage />} />
-        <Route path="/analytics" element={<AnalyticsPlaceholder />} />
+        <Route path="/analytics" element={<FaultSimulator />} />
+        <Route path="/simulator" element={<FaultSimulator />} />
         <Route path="/settings" element={<SettingsPlaceholder />} />
         {/* Fallback 404 Route */}
         <Route path="*" element={<NotFound />} />

@@ -7,6 +7,7 @@ from app.database import db, migrate
 from app.routes import register_routes
 from app.middleware import register_error_handlers
 from app.utils import setup_logger
+import app.models  # Ensure all ORM models are registered
 
 
 def create_app(config_name: str = None) -> Flask:
@@ -30,6 +31,10 @@ def create_app(config_name: str = None) -> Flask:
     db.init_app(app)
     migrate.init_app(app, db)
     CORS(app, resources={r"/api/*": {"origins": app.config.get("CORS_ORIGINS", "*")}})
+
+    # Automatically create missing database tables on startup
+    with app.app_context():
+        db.create_all()
 
     # Register Blueprints / Routes
     register_routes(app)
