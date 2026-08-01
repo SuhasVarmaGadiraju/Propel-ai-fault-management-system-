@@ -20,8 +20,13 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy application source code
 COPY . .
 
+# Ensure entrypoint script is executable
+RUN chmod +x /app/entrypoint.sh
+
 # Expose backend port
 EXPOSE 5000
+
+ENTRYPOINT ["/app/entrypoint.sh"]
 
 # Run Gunicorn web server for production
 CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "4", "run:app"]

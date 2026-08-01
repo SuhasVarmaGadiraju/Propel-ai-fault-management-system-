@@ -32,10 +32,6 @@ def create_app(config_name: str = None) -> Flask:
     migrate.init_app(app, db)
     CORS(app, resources={r"/api/*": {"origins": app.config.get("CORS_ORIGINS", "*")}})
 
-    # Automatically create missing database tables on startup
-    with app.app_context():
-        db.create_all()
-
     # Register Blueprints / Routes
     register_routes(app)
 
