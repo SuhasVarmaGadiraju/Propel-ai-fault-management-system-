@@ -6,6 +6,7 @@ from .network_graph import network_graph_bp
 from .faults import faults_bp
 from .tickets import tickets_bp
 from .simulator import simulator_bp
+from .analytics import analytics_bp
 
 
 def register_routes(app: Flask) -> None:
@@ -19,3 +20,4 @@ def register_routes(app: Flask) -> None:
     app.register_blueprint(faults_bp, url_prefix="/api/v1/faults")
     app.register_blueprint(tickets_bp, url_prefix="/api/v1/tickets")
     app.register_blueprint(simulator_bp, url_prefix="/api/v1/simulator")
+    app.register_blueprint(analytics_bp, url_prefix="/api/v1/analytics")

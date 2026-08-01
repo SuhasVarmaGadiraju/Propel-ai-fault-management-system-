@@ -1,36 +1,58 @@
-# Developer Onboarding & Guidelines
+# Developer Quickstart & Testing Guide
 
-## Purpose
-This document provides guidelines for developers contributing to the Propel AI Fault Detection & Management System, covering codebase organization, development environment setup, coding standards, testing practices, and Git workflow.
-
-## Table of Contents
-1. [Developer Onboarding](#developer-onboarding)
-2. [Code Base Structure](#code-base-structure)
-3. [Coding Standards](#coding-standards)
-4. [Testing Conventions](#testing-conventions)
-5. [Git & Branching Strategy](#git--branching-strategy)
+This guide provides instructions for developers working on the Propel AI Fault Detection and Management System.
 
 ---
 
-## Developer Onboarding
-*Placeholder: Step-by-step developer machine setup including Python virtualenv, Node.js packages, and pre-commit hooks.*
+## 1. Local Environment Setup
+
+### Environment Variables
+Copy `.env.example` to `.env`:
+```bash
+cp .env.example .env
+```
+
+### Python Virtual Environment
+```bash
+python -m venv venv
+# On Windows:
+venv\Scripts\activate
+# On Linux/macOS:
+source venv/bin/activate
+
+pip install -r backend/requirements.txt
+```
 
 ---
 
-## Code Base Structure
-*Placeholder: Overview of directory layouts across backend/, frontend/, scripts/, data/, and docs/.*
+## 2. Running Pytest Unit Test Suite
+
+The test suite covers models, graph topology, telemetry ingestion, fault localization, repair tickets, simulator scenarios, and analytics endpoints.
+
+```bash
+python -m pytest backend/app/tests/
+```
+
+Expected Output:
+```
+============================= 43 passed in 1.38s ==============================
+```
 
 ---
 
-## Coding Standards
-*Placeholder: PEP 8 guidelines for Python code, ESLint/Prettier rules for React frontend, and clean architecture practices.*
+## 3. Database Seeding & Scripts
 
----
+### Reset Database
+```bash
+python scripts/reset_database.py
+```
 
-## Testing Conventions
-*Placeholder: Pytest execution for Flask backend (`python -m pytest backend/app/tests/`) and Vitest for React frontend components.*
+### Re-Import Pole Registry
+```bash
+python scripts/import_poles.py
+```
 
----
-
-## Git & Branching Strategy
-*Placeholder: Feature branch naming conventions (`feature/`, `bugfix/`), pull request guidelines, and commit message formats.*
+### Generate Telemetry Events
+```bash
+python scripts/generate_telemetry.py
+```

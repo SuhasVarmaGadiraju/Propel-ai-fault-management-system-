@@ -9,6 +9,7 @@ from app.services.network_graph_service import (
 from app.services.fault_localization_service import FaultLocalizationService
 from app.services.ticket_service import TicketService
 from app.services.simulator_service import SimulatorService
+from app.services.analytics_service import AnalyticsService
 
 __all__ = [
     "PoleRegistryImportService",
@@ -20,4 +21,5 @@ __all__ = [
     "FaultLocalizationService",
     "TicketService",
     "SimulatorService",
+    "AnalyticsService",
 ]
