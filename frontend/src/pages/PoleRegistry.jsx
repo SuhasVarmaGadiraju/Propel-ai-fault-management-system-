@@ -38,7 +38,7 @@ const PoleRegistry = () => {
   const fetchStatistics = async () => {
     try {
       const data = await apiClient.get('/pole-registry/statistics');
-      setStats(data);
+      setStats(data || null);
     } catch (err) {
       console.error('Failed to fetch statistics:', err);
     }
@@ -55,10 +55,11 @@ const PoleRegistry = () => {
         device_installed: deviceFilter,
       });
       const data = await apiClient.get(`/pole-registry?${queryParams.toString()}`);
-      setPoles(data.poles);
-      setPagination(data.pagination);
+      setPoles(Array.isArray(data?.poles) ? data.poles : []);
+      setPagination(data?.pagination ?? { page: 1, page_size: 20, total_records: 0, total_pages: 1 });
     } catch (err) {
       console.error('Failed to fetch poles:', err);
+      setPoles([]);
     } finally {
       setLoading(false);
     }
@@ -104,35 +105,35 @@ const PoleRegistry = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard
           title="Total Poles"
-          value={stats ? stats.total_poles.toLocaleString() : '---'}
+          value={stats?.total_poles != null ? Number(stats.total_poles).toLocaleString() : '---'}
           statusText="Master Grid Assets"
           icon={FiCpu}
           colorTheme="blue"
         />
         <StatCard
           title="Transformers"
-          value={stats ? stats.total_transformers.toLocaleString() : '---'}
+          value={stats?.total_transformers != null ? Number(stats.total_transformers).toLocaleString() : '---'}
           statusText="Distribution DTRs"
           icon={FiZap}
           colorTheme="emerald"
         />
         <StatCard
           title="Feeders"
-          value={stats ? stats.total_feeders.toLocaleString() : '---'}
+          value={stats?.total_feeders != null ? Number(stats.total_feeders).toLocaleString() : '---'}
           statusText="11kV Radial Lines"
           icon={FiLayers}
           colorTheme="blue"
         />
         <StatCard
           title="Unknown Topology"
-          value={stats ? stats.unknown_topology_count.toLocaleString() : '---'}
+          value={stats?.unknown_topology_count != null ? Number(stats.unknown_topology_count).toLocaleString() : '---'}
           statusText="Unmapped Parent Poles"
           icon={FiAlertTriangle}
           colorTheme="amber"
         />
         <StatCard
           title="Poles w/o Device"
-          value={stats ? stats.poles_without_devices.toLocaleString() : '---'}
+          value={stats?.poles_without_devices != null ? Number(stats.poles_without_devices).toLocaleString() : '---'}
           statusText="No IoT Hardware"
           icon={FiCheckCircle}
           colorTheme="red"
@@ -209,49 +210,47 @@ const PoleRegistry = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {poles.length > 0 ? (
+                {Array.isArray(poles) && poles.length > 0 ? (
                   poles.map((p) => (
-                    <tr key={p.id} className="hover:bg-slate-50/60 transition-colors">
+                    <tr key={p?.id || p?.pole_code} className="hover:bg-slate-50/60 transition-colors">
                       <td className="px-6 py-3.5 font-bold text-slate-900 font-mono">
-                        {p.pole_code}
+                        {p?.pole_code || 'N/A'}
                       </td>
                       <td className="px-6 py-3.5 font-medium text-slate-700">
-                        {p.feeder_code}
+                        {p?.feeder_code || 'N/A'}
                       </td>
                       <td className="px-6 py-3.5 font-medium text-slate-700">
-                        {p.transformer_code}
+                        {p?.transformer_code || 'N/A'}
                       </td>
                       <td className="px-6 py-3.5 font-mono text-slate-500">
-                        {p.latitude.toFixed(4)}, {p.longitude.toFixed(4)}
+                        {p?.latitude != null ? Number(p.latitude).toFixed(4) : '--'}, {p?.longitude != null ? Number(p.longitude).toFixed(4) : '--'}
                       </td>
                       <td className="px-6 py-3.5 text-slate-600">
-                        {p.ward || 'N/A'} {p.pincode ? `(${p.pincode})` : ''}
+                        {p?.ward || 'N/A'} {p?.pincode ? `(${p.pincode})` : ''}
                       </td>
                       <td className="px-6 py-3.5">
                         <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${
-                            p.topology_known
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${p?.topology_known
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : 'bg-amber-50 text-amber-700 border border-amber-200'
-                          }`}
+                            }`}
                         >
-                          {p.topology_known ? 'Mapped' : 'Unknown'}
+                          {p?.topology_known ? 'Mapped' : 'Unknown'}
                         </span>
                       </td>
                       <td className="px-6 py-3.5">
                         <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${
-                            p.device_installed
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${p?.device_installed
                               ? 'bg-brand-50 text-brand-700 border border-brand-200'
                               : 'bg-slate-100 text-slate-500 border border-slate-200'
-                          }`}
+                            }`}
                         >
-                          {p.device_installed ? 'Installed' : 'No Device'}
+                          {p?.device_installed ? 'Installed' : 'No Device'}
                         </span>
                       </td>
                       <td className="px-6 py-3.5 text-right">
                         <button
-                          onClick={() => setSelectedPoleCode(p.pole_code)}
+                          onClick={() => setSelectedPoleCode(p?.pole_code)}
                           className="inline-flex items-center gap-1 px-2.5 py-1 bg-slate-100 hover:bg-brand-50 hover:text-brand-700 text-slate-600 rounded text-[11px] font-semibold transition-colors"
                         >
                           <FiEye className="w-3.5 h-3.5" />
@@ -275,7 +274,7 @@ const PoleRegistry = () => {
         {/* Pagination Footer */}
         <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
           <span>
-            Showing page <strong>{pagination.page}</strong> of <strong>{pagination.total_pages}</strong> ({pagination.total_records} total records)
+            Showing page <strong>{pagination?.page ?? 1}</strong> of <strong>{pagination?.total_pages ?? 1}</strong> ({pagination?.total_records ?? 0} total records)
           </span>
 
           <div className="flex items-center gap-2">
@@ -287,8 +286,8 @@ const PoleRegistry = () => {
               <FiChevronLeft className="w-4 h-4" />
             </button>
             <button
-              onClick={() => setPage((prev) => Math.min(prev + 1, pagination.total_pages))}
-              disabled={page >= pagination.total_pages}
+              onClick={() => setPage((prev) => Math.min(prev + 1, pagination?.total_pages ?? 1))}
+              disabled={page >= (pagination?.total_pages ?? 1)}
               className="p-1.5 border border-slate-200 bg-white rounded-lg disabled:opacity-40 hover:bg-slate-50"
             >
               <FiChevronRight className="w-4 h-4" />

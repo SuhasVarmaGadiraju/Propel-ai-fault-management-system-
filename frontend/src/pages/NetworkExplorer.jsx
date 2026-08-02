@@ -44,10 +44,11 @@ const NetworkExplorer = () => {
         apiClient.get('/network/statistics'),
         apiClient.get('/network/tree')
       ]);
-      setStats(statsRes);
-      setTreeData(treeRes.feeders || []);
+      setStats(statsRes || null);
+      setTreeData(Array.isArray(treeRes?.feeders) ? treeRes.feeders : []);
     } catch (err) {
       console.error('Failed to load network graph data:', err);
+      setTreeData([]);
     } finally {
       setLoading(false);
     }
@@ -70,15 +71,15 @@ const NetworkExplorer = () => {
   };
 
   const handleSelectNode = async (node, type) => {
-    setSelectedNode(node);
-    setSelectedType(type);
+    setSelectedNode(node || null);
+    setSelectedType(type || null);
     setPoleDetail(null);
 
-    if (type === 'pole') {
+    if (type === 'pole' && node?.code) {
       setLoadingDetail(true);
       try {
         const detail = await apiClient.get(`/network/pole/${node.code}`);
-        setPoleDetail(detail);
+        setPoleDetail(detail || null);
       } catch (err) {
         console.error('Failed to load pole node detail:', err);
       } finally {
@@ -115,36 +116,36 @@ const NetworkExplorer = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard
           title="Total Feeders"
-          value={stats ? stats.total_feeders : '---'}
+          value={stats?.total_feeders != null ? stats.total_feeders : '---'}
           statusText="Trunk Circuit Lines"
           icon={FiRadio}
           colorTheme="purple"
         />
         <StatCard
           title="Transformers"
-          value={stats ? stats.total_transformers : '---'}
+          value={stats?.total_transformers != null ? stats.total_transformers : '---'}
           statusText="DTR Substation Units"
           icon={FiZap}
           colorTheme="amber"
         />
         <StatCard
           title="Total Poles"
-          value={stats ? stats.total_poles.toLocaleString() : '---'}
+          value={stats?.total_poles != null ? Number(stats.total_poles).toLocaleString() : '---'}
           statusText="In-Memory Graph Nodes"
           icon={FiCpu}
           colorTheme="blue"
         />
         <StatCard
           title="Topology Known"
-          value={stats ? `${stats.known_topology_percent}%` : '---'}
-          statusText={`${stats ? stats.known_topology_count : 0} Poles Linked`}
+          value={stats?.known_topology_percent != null ? `${stats.known_topology_percent}%` : '---'}
+          statusText={`${stats?.known_topology_count ?? 0} Poles Linked`}
           icon={FiCheckCircle}
           colorTheme="emerald"
         />
         <StatCard
           title="Max Tree Depth"
-          value={stats ? `${stats.max_tree_depth} Hops` : '---'}
-          statusText={`Branch Factor: ${stats ? stats.avg_branching_factor : 0}`}
+          value={stats?.max_tree_depth != null ? `${stats.max_tree_depth} Hops` : '---'}
+          statusText={`Branch Factor: ${stats?.avg_branching_factor ?? 0}`}
           icon={FiLayers}
           colorTheme="blue"
         />
@@ -160,7 +161,7 @@ const NetworkExplorer = () => {
               Network Tree Hierarchy
             </h3>
             <span className="text-[11px] text-slate-400 font-mono">
-              {stats ? `${stats.total_poles} Nodes` : ''}
+              {stats?.total_poles != null ? `${stats.total_poles} Nodes` : ''}
             </span>
           </div>
 
@@ -178,10 +179,10 @@ const NetworkExplorer = () => {
           <div className="flex-1 overflow-y-auto pr-1 space-y-2 border border-slate-100 rounded-xl p-3 bg-slate-50/50">
             {loading ? (
               <Loading message="Constructing network tree..." />
-            ) : treeData.length > 0 ? (
+            ) : Array.isArray(treeData) && treeData.length > 0 ? (
               treeData.map((feederNode) => (
                 <NetworkTreeNode
-                  key={feederNode.id}
+                  key={feederNode?.id || feederNode?.code}
                   node={feederNode}
                   type="feeder"
                   onSelect={handleSelectNode}
@@ -210,7 +211,7 @@ const NetworkExplorer = () => {
                   </div>
                   <div>
                     <h2 className="text-lg font-bold text-slate-900 font-mono">
-                      {selectedNode.code || selectedNode.name}
+                      {selectedNode?.code || selectedNode?.name || 'Unnamed Node'}
                     </h2>
                     <span className="text-xs text-slate-400 uppercase font-semibold tracking-wider">
                       {selectedType} Node Inspector
@@ -221,12 +222,12 @@ const NetworkExplorer = () => {
                 {selectedType === 'pole' && (
                   <span
                     className={`px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider border ${
-                      selectedNode.topology_known
+                      selectedNode?.topology_known
                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                         : 'bg-amber-50 text-amber-700 border-amber-200'
                     }`}
                   >
-                    {selectedNode.topology_known ? 'Topology Known' : 'Unknown Topology'}
+                    {selectedNode?.topology_known ? 'Topology Known' : 'Unknown Topology'}
                   </span>
                 )}
               </div>
@@ -240,12 +241,12 @@ const NetworkExplorer = () => {
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-slate-700">
                   <div>
                     <span className="text-slate-400 block">Node UUID</span>
-                    <span className="font-mono font-semibold text-slate-900 truncate block">{selectedNode.id}</span>
+                    <span className="font-mono font-semibold text-slate-900 truncate block">{selectedNode?.id || 'N/A'}</span>
                   </div>
                   <div>
                     <span className="text-slate-400 block">Coordinates</span>
                     <span className="font-mono text-slate-900">
-                      {selectedNode.latitude?.toFixed(4)}, {selectedNode.longitude?.toFixed(4)}
+                      {selectedNode?.latitude != null ? Number(selectedNode.latitude).toFixed(4) : '--'}, {selectedNode?.longitude != null ? Number(selectedNode.longitude).toFixed(4) : '--'}
                     </span>
                   </div>
                   {selectedType === 'pole' && (
@@ -253,19 +254,19 @@ const NetworkExplorer = () => {
                       <div>
                         <span className="text-slate-400 block">Sequence on Line</span>
                         <span className="font-mono font-bold text-slate-900">
-                          {selectedNode.seq_on_line ? `#${selectedNode.seq_on_line}` : 'Unassigned'}
+                          {selectedNode?.seq_on_line ? `#${selectedNode.seq_on_line}` : 'Unassigned'}
                         </span>
                       </div>
                       <div>
                         <span className="text-slate-400 block">Parent Pole</span>
                         <span className="font-mono font-bold text-brand-700">
-                          {poleDetail?.parent_code || selectedNode.parent_code || 'Root Pole'}
+                          {poleDetail?.parent_code || selectedNode?.parent_code || 'Root Pole'}
                         </span>
                       </div>
                       <div>
                         <span className="text-slate-400 block">Direct Children</span>
                         <span className="font-mono text-slate-900 font-semibold">
-                          {poleDetail?.children_count ?? selectedNode.children_count ?? 0} Poles
+                          {poleDetail?.children_count ?? selectedNode?.children_count ?? 0} Poles
                         </span>
                       </div>
                     </>
@@ -274,7 +275,7 @@ const NetworkExplorer = () => {
               </div>
 
               {/* Path to Transformer Root (for Pole nodes) */}
-              {selectedType === 'pole' && poleDetail?.path_to_root && (
+              {selectedType === 'pole' && Array.isArray(poleDetail?.path_to_root) && poleDetail.path_to_root.length > 0 && (
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 space-y-2 text-xs">
                   <h3 className="font-bold text-slate-800 uppercase tracking-wider text-[11px]">
                     Path to Root Transformer
@@ -284,7 +285,7 @@ const NetworkExplorer = () => {
                       <React.Fragment key={code}>
                         <span
                           className={`px-2 py-0.5 rounded font-semibold ${
-                            code === selectedNode.code
+                            code === selectedNode?.code
                               ? 'bg-brand-600 text-white'
                               : 'bg-white text-slate-700 border border-slate-200'
                           }`}
@@ -308,11 +309,11 @@ const NetworkExplorer = () => {
                     Attached Device & Live Telemetry State
                   </h3>
 
-                  {selectedNode.device ? (
+                  {selectedNode?.device ? (
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                       <div>
                         <span className="text-slate-400 block">Device ID</span>
-                        <span className="font-mono font-bold text-emerald-400">{selectedNode.device.device_id}</span>
+                        <span className="font-mono font-bold text-emerald-400">{selectedNode.device?.device_id || 'N/A'}</span>
                       </div>
                       <div>
                         <span className="text-slate-400 block">Energized State</span>
@@ -334,7 +335,7 @@ const NetworkExplorer = () => {
                       </div>
                       <div>
                         <span className="text-slate-400 block">Firmware</span>
-                        <span className="font-mono text-slate-200">{selectedNode.device.firmware_version || '1.0.0'}</span>
+                        <span className="font-mono text-slate-200">{selectedNode.device?.firmware_version || '1.0.0'}</span>
                       </div>
                     </div>
                   ) : (

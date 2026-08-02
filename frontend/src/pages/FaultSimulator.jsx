@@ -47,34 +47,33 @@ const FaultSimulator = () => {
 
   const fetchScenariosAndHistory = async () => {
     try {
-      const [scenData, histData, statsData] = await Promise.all([
+      const [scenData, histData] = await Promise.all([
         apiClient.get('/simulator/scenarios'),
-        apiClient.get('/simulator/history'),
-        apiClient.get('/network/statistics')
+        apiClient.get('/simulator/history')
       ]);
-      setScenarios(scenData || []);
-      setHistory(histData || []);
+      setScenarios(Array.isArray(scenData) ? scenData : []);
+      setHistory(Array.isArray(histData) ? histData : []);
     } catch (err) {
       console.error('Failed to fetch simulator presets/history:', err);
+      setScenarios([]);
+      setHistory([]);
     }
   };
 
   const fetchNetworkTopology = async () => {
     try {
       const treeData = await apiClient.get('/network/tree');
-      if (treeData && treeData.feeders) {
+      if (treeData && Array.isArray(treeData.feeders) && treeData.feeders.length > 0) {
         setFeeders(treeData.feeders);
-        if (treeData.feeders.length > 0) {
-          const f0 = treeData.feeders[0];
-          setSelectedFeeder(f0.code);
-          if (f0.transformers && f0.transformers.length > 0) {
-            setTransformers(f0.transformers);
-            const tr0 = f0.transformers[0];
-            setSelectedTransformer(tr0.code);
-            if (tr0.root_poles && tr0.root_poles.length > 0) {
-              setPoles(tr0.root_poles);
-              setSelectedPole(tr0.root_poles[0].code);
-            }
+        const f0 = treeData.feeders[0];
+        setSelectedFeeder(f0.code || '');
+        if (Array.isArray(f0.transformers) && f0.transformers.length > 0) {
+          setTransformers(f0.transformers);
+          const tr0 = f0.transformers[0];
+          setSelectedTransformer(tr0.code || '');
+          if (Array.isArray(tr0.root_poles) && tr0.root_poles.length > 0) {
+            setPoles(tr0.root_poles);
+            setSelectedPole(tr0.root_poles[0].code || '');
           }
         }
       }
@@ -90,23 +89,23 @@ const FaultSimulator = () => {
 
   const handleFeederChange = (code) => {
     setSelectedFeeder(code);
-    const f = feeders.find((item) => item.code === code);
-    if (f && f.transformers) {
+    const f = Array.isArray(feeders) ? feeders.find((item) => item?.code === code) : null;
+    if (f && Array.isArray(f.transformers)) {
       setTransformers(f.transformers);
       if (f.transformers.length > 0) {
-        setSelectedTransformer(f.transformers[0].code);
-        setPoles(f.transformers[0].root_poles || []);
+        setSelectedTransformer(f.transformers[0].code || '');
+        setPoles(Array.isArray(f.transformers[0].root_poles) ? f.transformers[0].root_poles : []);
       }
     }
   };
 
   const handleTransformerChange = (code) => {
     setSelectedTransformer(code);
-    const tr = transformers.find((item) => item.code === code);
-    if (tr && tr.root_poles) {
+    const tr = Array.isArray(transformers) ? transformers.find((item) => item?.code === code) : null;
+    if (tr && Array.isArray(tr.root_poles)) {
       setPoles(tr.root_poles);
       if (tr.root_poles.length > 0) {
-        setSelectedPole(tr.root_poles[0].code);
+        setSelectedPole(tr.root_poles[0].code || '');
       }
     }
   };
@@ -122,7 +121,7 @@ const FaultSimulator = () => {
         pole_id: selectedPole,
       };
       const res = await apiClient.post('/simulator/run', payload);
-      setLastResult(res);
+      setLastResult(res || null);
       fetchScenariosAndHistory();
     } catch (err) {
       console.error('Simulation execution failed:', err);
@@ -135,7 +134,7 @@ const FaultSimulator = () => {
     setRestoring(true);
     try {
       const res = await apiClient.post('/simulator/restore', { target_id: selectedFeeder });
-      setLastResult(res);
+      setLastResult(res || null);
       fetchScenariosAndHistory();
     } catch (err) {
       console.error('Power restoration failed:', err);
@@ -213,7 +212,7 @@ const FaultSimulator = () => {
                   onChange={(e) => handleFeederChange(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs font-mono text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
-                  {feeders.map((f) => (
+                  {Array.isArray(feeders) && feeders.map((f) => (
                     <option key={f.code} value={f.code}>
                       {f.code} - {f.name}
                     </option>
@@ -228,9 +227,9 @@ const FaultSimulator = () => {
                   onChange={(e) => handleTransformerChange(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs font-mono text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
-                  {transformers.map((tr) => (
+                  {Array.isArray(transformers) && transformers.map((tr) => (
                     <option key={tr.code} value={tr.code}>
-                      {tr.code} ({tr.total_poles} poles)
+                      {tr.code} ({tr.total_poles ?? 0} poles)
                     </option>
                   ))}
                 </select>
@@ -243,7 +242,7 @@ const FaultSimulator = () => {
                   onChange={(e) => setSelectedPole(e.target.value)}
                   className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs font-mono text-white focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
-                  {poles.map((p) => (
+                  {Array.isArray(poles) && poles.map((p) => (
                     <option key={p.code} value={p.code}>
                       {p.code}
                     </option>
@@ -274,7 +273,7 @@ const FaultSimulator = () => {
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {scenarios.map((scen) => {
+          {Array.isArray(scenarios) && scenarios.map((scen) => {
             const IconComp = iconMap[scen.icon] || FiZap;
             const isSelected = selectedScenario === scen.id;
 
@@ -357,7 +356,7 @@ const FaultSimulator = () => {
                 <FiCpu className="w-3.5 h-3.5 text-amber-400" />
                 Fault Localization Result
               </span>
-              {lastResult.fault_localization && lastResult.fault_localization.incidents && lastResult.fault_localization.incidents.length > 0 ? (
+              {lastResult.fault_localization && Array.isArray(lastResult.fault_localization.incidents) && lastResult.fault_localization.incidents.length > 0 ? (
                 <div className="space-y-1">
                   <span className="px-2 py-0.5 bg-amber-500/20 text-amber-300 font-bold rounded text-[11px] inline-block font-mono">
                     {lastResult.fault_localization.incidents[0].fault_type}
@@ -379,7 +378,7 @@ const FaultSimulator = () => {
                 <FiClipboard className="w-3.5 h-3.5 text-purple-400" />
                 Automated Repair Ticket
               </span>
-              {lastResult.tickets_created && lastResult.tickets_created.length > 0 ? (
+              {Array.isArray(lastResult.tickets_created) && lastResult.tickets_created.length > 0 ? (
                 <div className="space-y-1">
                   <span className="font-mono font-bold text-purple-300 text-xs">
                     {lastResult.tickets_created[0].ticket_number}
@@ -401,7 +400,7 @@ const FaultSimulator = () => {
         <div className="px-6 py-4 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
           <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
             <FiClock className="w-4 h-4 text-brand-600" />
-            Simulation Execution Audit Log ({history.length})
+            Simulation Execution Audit Log ({Array.isArray(history) ? history.length : 0})
           </h3>
         </div>
 
@@ -420,7 +419,7 @@ const FaultSimulator = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
-              {history.length > 0 ? (
+              {Array.isArray(history) && history.length > 0 ? (
                 history.map((h) => (
                   <tr key={h.id} className="hover:bg-slate-50/60 transition-colors">
                     <td className="px-6 py-3.5 font-mono font-bold text-slate-900">{h.id}</td>
@@ -429,7 +428,7 @@ const FaultSimulator = () => {
                     <td className="px-6 py-3.5 text-slate-600">{h.telemetry_injected} sensors</td>
                     <td className="px-6 py-3.5 font-semibold text-amber-700">{h.incidents_detected} outages</td>
                     <td className="px-6 py-3.5 font-mono font-bold text-purple-700">
-                      {h.ticket_numbers && h.ticket_numbers.length > 0 ? h.ticket_numbers.join(', ') : '0'}
+                      {Array.isArray(h.ticket_numbers) && h.ticket_numbers.length > 0 ? h.ticket_numbers.join(', ') : '0'}
                     </td>
                     <td className="px-6 py-3.5 font-mono text-emerald-700 font-bold">{h.duration_ms}ms</td>
                     <td className="px-6 py-3.5 text-right font-mono text-slate-500">{formatDate(h.timestamp)}</td>

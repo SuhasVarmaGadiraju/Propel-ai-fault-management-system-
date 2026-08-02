@@ -34,7 +34,7 @@ const AnalyticsPage = () => {
   const fetchAnalyticsData = async () => {
     setLoading(true);
     try {
-      const [ovData, fData, tData, rData, sData] = await Promise.all([
+      const [ovData, fData, tData, rData, sData] = await Promise.allSettled([
         apiClient.get('/analytics/overview'),
         apiClient.get('/analytics/faults'),
         apiClient.get('/analytics/tickets'),
@@ -42,11 +42,11 @@ const AnalyticsPage = () => {
         apiClient.get('/analytics/simulator')
       ]);
 
-      setOverview(ovData);
-      setFaultStats(fData);
-      setTicketStats(tData);
-      setReliability(rData);
-      setSimStats(sData);
+      if (ovData.status === 'fulfilled') setOverview(ovData.value || null);
+      if (fData.status === 'fulfilled') setFaultStats(fData.value || null);
+      if (tData.status === 'fulfilled') setTicketStats(tData.value || null);
+      if (rData.status === 'fulfilled') setReliability(rData.value || null);
+      if (sData.status === 'fulfilled') setSimStats(sData.value || null);
     } catch (err) {
       console.error('Failed to fetch analytics data:', err);
     } finally {
@@ -114,42 +114,42 @@ const AnalyticsPage = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-4">
         <StatCard
           title="Total Poles"
-          value={overview ? overview.total_poles.toLocaleString() : '---'}
+          value={overview?.total_poles != null ? Number(overview.total_poles).toLocaleString() : '---'}
           statusText="Master Pole Registry"
           icon={FiShield}
           colorTheme="blue"
         />
         <StatCard
           title="Instrumented"
-          value={overview ? overview.instrumented_poles.toLocaleString() : '---'}
+          value={overview?.instrumented_poles != null ? Number(overview.instrumented_poles).toLocaleString() : '---'}
           statusText="IoT Monitored Devices"
           icon={FiRadio}
           colorTheme="blue"
         />
         <StatCard
           title="Active Outages"
-          value={overview ? overview.active_faults : '---'}
+          value={overview?.active_faults != null ? overview.active_faults : '---'}
           statusText="Localized Fault Incidents"
           icon={FiAlertTriangle}
           colorTheme="red"
         />
         <StatCard
           title="Open Tickets"
-          value={overview ? overview.open_tickets : '---'}
+          value={overview?.open_tickets != null ? overview.open_tickets : '---'}
           statusText="Pending Work Orders"
           icon={FiClock}
           colorTheme="amber"
         />
         <StatCard
           title="Network Health"
-          value={overview ? `${overview.network_health}%` : '---'}
+          value={overview?.network_health != null ? `${overview.network_health}%` : '---'}
           statusText="Energized Power Flow"
           icon={FiActivity}
           colorTheme="emerald"
         />
         <StatCard
           title="Telemetry 24h"
-          value={overview ? overview.telemetry_today.toLocaleString() : '---'}
+          value={overview?.telemetry_today != null ? Number(overview.telemetry_today).toLocaleString() : '---'}
           statusText="Ingested IoT Events"
           icon={FiTrendingUp}
           colorTheme="purple"
@@ -164,32 +164,32 @@ const AnalyticsPage = () => {
             Grid Reliability & Performance KPIs
           </h2>
           <span className="text-xs font-mono text-emerald-400 font-bold">
-            Availability: {reliability ? reliability.network_availability_percent : 100}%
+            Availability: {reliability?.network_availability_percent ?? 100}%
           </span>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
           <div className="bg-slate-850 p-4 rounded-xl border border-slate-800 space-y-1">
             <span className="text-slate-400 uppercase tracking-wider text-[10px] font-bold block">MTTR (Mean Time To Repair)</span>
-            <span className="text-2xl font-bold font-mono text-emerald-400">{reliability ? reliability.mttr_minutes : 0} min</span>
+            <span className="text-2xl font-bold font-mono text-emerald-400">{reliability?.mttr_minutes ?? 0} min</span>
             <p className="text-[11px] text-slate-400">Avg duration from ticket creation to restoration verification</p>
           </div>
 
           <div className="bg-slate-850 p-4 rounded-xl border border-slate-800 space-y-1">
             <span className="text-slate-400 uppercase tracking-wider text-[10px] font-bold block">Avg Outage Household Impact</span>
-            <span className="text-2xl font-bold font-mono text-amber-400">{reliability ? reliability.avg_affected_households : 0}</span>
+            <span className="text-2xl font-bold font-mono text-amber-400">{reliability?.avg_affected_households ?? 0}</span>
             <p className="text-[11px] text-slate-400">Mean estimated households affected per localized incident</p>
           </div>
 
           <div className="bg-slate-850 p-4 rounded-xl border border-slate-800 space-y-1">
             <span className="text-slate-400 uppercase tracking-wider text-[10px] font-bold block">Most Affected Feeder</span>
-            <span className="text-lg font-bold font-mono text-brand-400">{reliability ? reliability.most_affected_feeder : 'N/A'}</span>
+            <span className="text-lg font-bold font-mono text-brand-400">{reliability?.most_affected_feeder || 'N/A'}</span>
             <p className="text-[11px] text-slate-400">11kV feeder line with highest outage incident frequency</p>
           </div>
 
           <div className="bg-slate-850 p-4 rounded-xl border border-slate-800 space-y-1">
             <span className="text-slate-400 uppercase tracking-wider text-[10px] font-bold block">Most Affected DTR Substation</span>
-            <span className="text-lg font-bold font-mono text-purple-400">{reliability ? reliability.most_affected_transformer : 'N/A'}</span>
+            <span className="text-lg font-bold font-mono text-purple-400">{reliability?.most_affected_transformer || 'N/A'}</span>
             <p className="text-[11px] text-slate-400">Transformer station with highest outage incident frequency</p>
           </div>
         </div>
@@ -204,7 +204,7 @@ const AnalyticsPage = () => {
             Fault Type Distribution
           </h3>
           <div className="space-y-2 text-xs">
-            {faultStats && faultStats.by_fault_type ? (
+            {faultStats?.by_fault_type ? (
               Object.entries(faultStats.by_fault_type).map(([ftype, count]) => (
                 <div key={ftype} className="space-y-1">
                   <div className="flex justify-between font-semibold">
@@ -215,7 +215,7 @@ const AnalyticsPage = () => {
                     <div
                       className="h-full bg-amber-500 rounded-full"
                       style={{
-                        width: `${faultStats.total_incidents > 0 ? (count / faultStats.total_incidents) * 100 : 0}%`,
+                        width: `${(faultStats?.total_incidents ?? 0) > 0 ? (count / faultStats.total_incidents) * 100 : 0}%`,
                       }}
                     ></div>
                   </div>
@@ -234,7 +234,7 @@ const AnalyticsPage = () => {
             Ticket Priority Distribution
           </h3>
           <div className="space-y-2 text-xs">
-            {ticketStats && ticketStats.by_priority ? (
+            {ticketStats?.by_priority ? (
               Object.entries(ticketStats.by_priority).map(([prio, count]) => {
                 const colorMap = { CRITICAL: 'bg-red-600', HIGH: 'bg-amber-500', MEDIUM: 'bg-blue-500', LOW: 'bg-slate-400' };
                 return (
@@ -247,7 +247,7 @@ const AnalyticsPage = () => {
                       <div
                         className={`h-full ${colorMap[prio] || 'bg-brand-500'} rounded-full`}
                         style={{
-                          width: `${ticketStats.total_tickets > 0 ? (count / ticketStats.total_tickets) * 100 : 0}%`,
+                          width: `${(ticketStats?.total_tickets ?? 0) > 0 ? (count / ticketStats.total_tickets) * 100 : 0}%`,
                         }}
                       ></div>
                     </div>
@@ -267,7 +267,7 @@ const AnalyticsPage = () => {
             Ticket Lifecycle Status Breakdown
           </h3>
           <div className="space-y-2 text-xs">
-            {ticketStats && ticketStats.by_status ? (
+            {ticketStats?.by_status ? (
               Object.entries(ticketStats.by_status).map(([st, count]) => (
                 <div key={st} className="space-y-1">
                   <div className="flex justify-between font-semibold">
@@ -278,7 +278,7 @@ const AnalyticsPage = () => {
                     <div
                       className="h-full bg-emerald-500 rounded-full"
                       style={{
-                        width: `${ticketStats.total_tickets > 0 ? (count / ticketStats.total_tickets) * 100 : 0}%`,
+                        width: `${(ticketStats?.total_tickets ?? 0) > 0 ? (count / ticketStats.total_tickets) * 100 : 0}%`,
                       }}
                     ></div>
                   </div>
@@ -297,19 +297,19 @@ const AnalyticsPage = () => {
             Confidence Bucket Distribution
           </h3>
           <div className="space-y-3 text-xs">
-            {faultStats && faultStats.by_confidence_bucket ? (
+            {faultStats?.by_confidence_bucket ? (
               <>
                 <div className="flex justify-between items-center bg-emerald-50 p-2.5 rounded-lg border border-emerald-200">
                   <span className="font-bold text-emerald-800">High Certainty (&gt;= 90%)</span>
-                  <span className="font-mono font-bold text-emerald-900">{faultStats.by_confidence_bucket.high}</span>
+                  <span className="font-mono font-bold text-emerald-900">{faultStats.by_confidence_bucket.high ?? 0}</span>
                 </div>
                 <div className="flex justify-between items-center bg-amber-50 p-2.5 rounded-lg border border-amber-200">
                   <span className="font-bold text-amber-800">Medium Certainty (70-89%)</span>
-                  <span className="font-mono font-bold text-amber-900">{faultStats.by_confidence_bucket.medium}</span>
+                  <span className="font-mono font-bold text-amber-900">{faultStats.by_confidence_bucket.medium ?? 0}</span>
                 </div>
                 <div className="flex justify-between items-center bg-red-50 p-2.5 rounded-lg border border-red-200">
                   <span className="font-bold text-red-800">Low Certainty (&lt; 70%)</span>
-                  <span className="font-mono font-bold text-red-900">{faultStats.by_confidence_bucket.low}</span>
+                  <span className="font-mono font-bold text-red-900">{faultStats.by_confidence_bucket.low ?? 0}</span>
                 </div>
               </>
             ) : (
@@ -325,7 +325,7 @@ const AnalyticsPage = () => {
             Simulator Scenario Execution Usage
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-            {simStats && simStats.scenario_counts ? (
+            {simStats?.scenario_counts ? (
               Object.entries(simStats.scenario_counts).map(([scen, count]) => (
                 <div key={scen} className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                   <span className="text-[10px] font-bold text-slate-500 uppercase block font-mono">{scen}</span>

@@ -38,7 +38,7 @@ const ImportCsvModal = ({ isOpen, onClose, onImportSuccess }) => {
       const summary = await apiClient.post('/pole-registry/import', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      setImportSummary(summary);
+      setImportSummary(summary || null);
       if (onImportSuccess) {
         onImportSuccess();
       }
@@ -111,7 +111,7 @@ const ImportCsvModal = ({ isOpen, onClose, onImportSuccess }) => {
                 <div>
                   <h4 className="text-sm font-bold text-emerald-900">Import Completed</h4>
                   <p className="text-xs text-emerald-700 mt-0.5">
-                    Processed {importSummary.total_rows} total CSV records.
+                    Processed {importSummary?.total_rows ?? 0} total CSV records.
                   </p>
                 </div>
               </div>
@@ -119,24 +119,24 @@ const ImportCsvModal = ({ isOpen, onClose, onImportSuccess }) => {
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                   <span className="text-xs text-slate-500 block">Inserted</span>
-                  <span className="text-lg font-bold text-emerald-600">{importSummary.imported_count}</span>
+                  <span className="text-lg font-bold text-emerald-600">{importSummary?.imported_count ?? 0}</span>
                 </div>
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                   <span className="text-xs text-slate-500 block">Updated</span>
-                  <span className="text-lg font-bold text-brand-600">{importSummary.updated_count}</span>
+                  <span className="text-lg font-bold text-brand-600">{importSummary?.updated_count ?? 0}</span>
                 </div>
                 <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
                   <span className="text-xs text-slate-500 block">Skipped</span>
-                  <span className="text-lg font-bold text-amber-600">{importSummary.skipped_count}</span>
+                  <span className="text-lg font-bold text-amber-600">{importSummary?.skipped_count ?? 0}</span>
                 </div>
               </div>
 
-              {importSummary.errors && importSummary.errors.length > 0 && (
+              {Array.isArray(importSummary?.errors) && importSummary.errors.length > 0 && (
                 <div className="max-h-40 overflow-y-auto p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs space-y-1">
                   <p className="font-semibold text-slate-700 mb-1">Validation Errors ({importSummary.errors.length}):</p>
                   {importSummary.errors.map((err, i) => (
                     <p key={i} className="text-red-600 font-mono">
-                      Row {err.row} [{err.pole_id}]: {err.error}
+                      Row {err?.row} [{err?.pole_id}]: {err?.error}
                     </p>
                   ))}
                 </div>

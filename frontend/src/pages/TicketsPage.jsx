@@ -40,7 +40,7 @@ const TicketsPage = () => {
   const fetchStatistics = async () => {
     try {
       const data = await apiClient.get('/tickets/statistics');
-      setStats(data);
+      setStats(data || null);
     } catch (err) {
       console.error('Failed to fetch ticket statistics:', err);
     }
@@ -57,10 +57,11 @@ const TicketsPage = () => {
         priority: priorityFilter,
       });
       const data = await apiClient.get(`/tickets?${queryParams.toString()}`);
-      setTickets(data.tickets);
-      setPagination(data.pagination);
+      setTickets(Array.isArray(data?.tickets) ? data.tickets : []);
+      setPagination(data?.pagination ?? { page: 1, page_size: 20, total_records: 0, total_pages: 1 });
     } catch (err) {
       console.error('Failed to fetch tickets:', err);
+      setTickets([]);
     } finally {
       setLoading(false);
     }
@@ -77,10 +78,10 @@ const TicketsPage = () => {
   const refreshAll = () => {
     fetchStatistics();
     fetchTickets();
-    if (selectedTicket) {
+    if (selectedTicket?.ticket_number) {
       // Re-fetch selected ticket details
       apiClient.get(`/tickets/${selectedTicket.ticket_number}`)
-        .then((updated) => setSelectedTicket(updated))
+        .then((updated) => setSelectedTicket(updated || null))
         .catch(() => {});
     }
   };
@@ -125,35 +126,35 @@ const TicketsPage = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard
           title="Total Tickets"
-          value={stats ? stats.total_tickets : '---'}
+          value={stats?.total_tickets != null ? stats.total_tickets : '---'}
           statusText="Automated Work Orders"
           icon={FiClipboard}
           colorTheme="blue"
         />
         <StatCard
           title="New / Pending"
-          value={stats ? stats.new_count + stats.acknowledged_count : '---'}
+          value={stats ? (stats.new_count ?? 0) + (stats.acknowledged_count ?? 0) : '---'}
           statusText="Awaiting Assignment"
           icon={FiClock}
           colorTheme="amber"
         />
         <StatCard
           title="In Progress"
-          value={stats ? stats.assigned_count : '---'}
+          value={stats?.assigned_count != null ? stats.assigned_count : '---'}
           statusText="Crew Dispatched"
           icon={FiUserCheck}
           colorTheme="blue"
         />
         <StatCard
           title="Resolved / Verified"
-          value={stats ? stats.resolved_count + stats.verified_count : '---'}
+          value={stats ? (stats.resolved_count ?? 0) + (stats.verified_count ?? 0) : '---'}
           statusText="Restoration Confirmed"
           icon={FiCheckCircle}
           colorTheme="emerald"
         />
         <StatCard
           title="Critical Priority"
-          value={stats ? stats.critical_count : '---'}
+          value={stats?.critical_count != null ? stats.critical_count : '---'}
           statusText="Feeder / Major Outages"
           icon={FiAlertOctagon}
           colorTheme="red"
@@ -236,36 +237,36 @@ const TicketsPage = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {tickets.length > 0 ? (
+                {Array.isArray(tickets) && tickets.length > 0 ? (
                   tickets.map((t) => (
-                    <tr key={t.id} className="hover:bg-slate-50/60 transition-colors">
+                    <tr key={t?.id || t?.ticket_number} className="hover:bg-slate-50/60 transition-colors">
                       <td className="px-6 py-3.5 font-bold font-mono text-slate-900">
-                        {t.ticket_number}
+                        {t?.ticket_number || 'N/A'}
                       </td>
                       <td className="px-6 py-3.5">
-                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${priorityBadgeMap[t.priority]}`}>
-                          {t.priority}
+                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${priorityBadgeMap[t?.priority] || ''}`}>
+                          {t?.priority || 'NORMAL'}
                         </span>
                       </td>
                       <td className="px-6 py-3.5">
-                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-semibold border ${statusBadgeMap[t.status]}`}>
-                          {t.status}
+                        <span className={`px-2 py-0.5 rounded text-[10px] uppercase font-semibold border ${statusBadgeMap[t?.status] || ''}`}>
+                          {t?.status || 'NEW'}
                         </span>
                       </td>
                       <td className="px-6 py-3.5 font-semibold text-slate-800">
-                        {t.fault_type.replace('_', ' ')}
+                        {t?.fault_type ? String(t.fault_type).replace('_', ' ') : 'N/A'}
                       </td>
                       <td className="px-6 py-3.5 font-mono text-brand-700 font-semibold">
-                        {t.transformer_code || 'N/A'}
+                        {t?.transformer_code || 'N/A'}
                       </td>
                       <td className="px-6 py-3.5 text-slate-600">
-                        {t.estimated_households} Households
+                        {t?.estimated_households ?? 0} Households
                       </td>
                       <td className="px-6 py-3.5 font-medium text-slate-800">
-                        {t.assigned_engineer || <span className="text-slate-400 italic">Unassigned</span>}
+                        {t?.assigned_engineer || <span className="text-slate-400 italic">Unassigned</span>}
                       </td>
                       <td className="px-6 py-3.5 font-mono text-slate-500">
-                        {formatDate(t.created_at)}
+                        {formatDate(t?.created_at)}
                       </td>
                       <td className="px-6 py-3.5 text-right">
                         <button
@@ -293,7 +294,7 @@ const TicketsPage = () => {
         {/* Pagination Footer */}
         <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
           <span>
-            Page <strong>{pagination.page}</strong> of <strong>{pagination.total_pages}</strong> ({pagination.total_records} total tickets)
+            Page <strong>{pagination?.page ?? 1}</strong> of <strong>{pagination?.total_pages ?? 1}</strong> ({pagination?.total_records ?? 0} total tickets)
           </span>
 
           <div className="flex items-center gap-2">
@@ -305,8 +306,8 @@ const TicketsPage = () => {
               <FiChevronLeft className="w-4 h-4" />
             </button>
             <button
-              onClick={() => setPage((prev) => Math.min(prev + 1, pagination.total_pages))}
-              disabled={page >= pagination.total_pages}
+              onClick={() => setPage((prev) => Math.min(prev + 1, pagination?.total_pages ?? 1))}
+              disabled={page >= (pagination?.total_pages ?? 1)}
               className="p-1.5 border border-slate-200 bg-white rounded-lg disabled:opacity-40 hover:bg-slate-50"
             >
               <FiChevronRight className="w-4 h-4" />

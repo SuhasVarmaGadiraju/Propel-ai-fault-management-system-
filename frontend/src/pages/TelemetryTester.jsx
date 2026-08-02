@@ -40,7 +40,7 @@ const TelemetryTester = () => {
   const fetchStatistics = async () => {
     try {
       const data = await apiClient.get('/telemetry/statistics');
-      setStats(data);
+      setStats(data || null);
     } catch (err) {
       console.error('Failed to fetch statistics:', err);
     }
@@ -61,10 +61,10 @@ const TelemetryTester = () => {
       setStatusCode(200);
       setResponseConsole(response);
     } catch (err) {
-      setStatusCode(err.status || 400);
+      setStatusCode(err?.status || 400);
       setResponseConsole({
-        error: err.message || 'Request failed',
-        status: err.status
+        error: err?.message || 'Request failed',
+        status: err?.status
       });
     } finally {
       setIsSending(false);
@@ -234,35 +234,35 @@ const TelemetryTester = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard
           title="Total Telemetry"
-          value={stats ? stats.total_telemetry.toLocaleString() : '---'}
+          value={stats?.total_telemetry != null ? Number(stats.total_telemetry).toLocaleString() : '---'}
           statusText="Stored Database Events"
           icon={FiActivity}
           colorTheme="blue"
         />
         <StatCard
           title="Power Outages"
-          value={stats ? stats.power_lost.toLocaleString() : '---'}
+          value={stats?.power_lost != null ? Number(stats.power_lost).toLocaleString() : '---'}
           statusText="Power Lost Events"
           icon={FiZap}
           colorTheme="red"
         />
         <StatCard
           title="Power Restored"
-          value={stats ? stats.power_restored.toLocaleString() : '---'}
+          value={stats?.power_restored != null ? Number(stats.power_restored).toLocaleString() : '---'}
           statusText="Restoration Events"
           icon={FiCheckCircle}
           colorTheme="emerald"
         />
         <StatCard
           title="Out of Order"
-          value={stats ? stats.out_of_order_messages.toLocaleString() : '---'}
+          value={stats?.out_of_order_messages != null ? Number(stats.out_of_order_messages).toLocaleString() : '---'}
           statusText="Lagging Sequence Events"
           icon={FiAlertTriangle}
           colorTheme="amber"
         />
         <StatCard
           title="Online Devices"
-          value={stats ? stats.currently_online_devices.toLocaleString() : '---'}
+          value={stats?.currently_online_devices != null ? Number(stats.currently_online_devices).toLocaleString() : '---'}
           statusText="Communicated < 15m"
           icon={FiZap}
           colorTheme="blue"

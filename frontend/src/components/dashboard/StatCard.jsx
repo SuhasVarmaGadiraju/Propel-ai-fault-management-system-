@@ -10,6 +10,7 @@ const StatCard = ({ title, value, statusText, icon: Icon, colorTheme = 'blue' })
     red: 'bg-red-50 text-red-600 border-red-100',
     amber: 'bg-amber-50 text-amber-600 border-amber-100',
     emerald: 'bg-emerald-50 text-emerald-600 border-emerald-100',
+    purple: 'bg-purple-50 text-purple-600 border-purple-100',
   };
 
   return (
@@ -20,7 +21,7 @@ const StatCard = ({ title, value, statusText, icon: Icon, colorTheme = 'blue' })
             {title}
           </p>
           <h3 className="text-2xl font-bold text-slate-900 tracking-tight">
-            {value}
+            {value != null ? value : '---'}
           </h3>
           {statusText && (
             <p className="mt-2 text-xs font-medium text-slate-500 flex items-center gap-1">

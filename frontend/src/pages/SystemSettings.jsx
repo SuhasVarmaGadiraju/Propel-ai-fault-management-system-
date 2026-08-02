@@ -123,16 +123,16 @@ const SystemSettings = () => {
         apiClient.get('/analytics/reliability'),
       ]);
 
-      if (healthRes.status === 'fulfilled') setHealthData(healthRes.value);
+      if (healthRes.status === 'fulfilled') setHealthData(healthRes.value || null);
       else setHealthData(null);
 
-      if (statRes.status === 'fulfilled') setStatData(statRes.value);
+      if (statRes.status === 'fulfilled') setStatData(statRes.value || null);
       else setStatData(null);
 
-      if (overviewRes.status === 'fulfilled') setAnalyticsOverview(overviewRes.value);
+      if (overviewRes.status === 'fulfilled') setAnalyticsOverview(overviewRes.value || null);
       else setAnalyticsOverview(null);
 
-      if (reliabilityRes.status === 'fulfilled') setReliabilityMetrics(reliabilityRes.value);
+      if (reliabilityRes.status === 'fulfilled') setReliabilityMetrics(reliabilityRes.value || null);
       else setReliabilityMetrics(null);
     } catch (err) {
       console.error('Error fetching settings system data:', err);
@@ -267,9 +267,7 @@ const SystemSettings = () => {
 
   return (
     <div className="space-y-8 pb-12">
-      {/* --------------------------------------------------------------------- */}
       {/* Header */}
-      {/* --------------------------------------------------------------------- */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-slate-200/80 pb-5">
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
@@ -310,9 +308,7 @@ const SystemSettings = () => {
         </div>
       )}
 
-      {/* --------------------------------------------------------------------- */}
       {/* SECTION 1 — System Information (Read Only) */}
-      {/* --------------------------------------------------------------------- */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -357,28 +353,28 @@ const SystemSettings = () => {
             <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
               <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Total Registered Devices</span>
               <span className="text-sm font-bold text-brand-600">
-                {statData ? statData.total_devices.toLocaleString() : (analyticsOverview ? analyticsOverview.instrumented_poles.toLocaleString() : '758')}
+                {statData?.total_devices != null ? Number(statData.total_devices).toLocaleString() : (analyticsOverview?.instrumented_poles != null ? Number(analyticsOverview.instrumented_poles).toLocaleString() : '758')}
               </span>
             </div>
 
             <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
               <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Total Feeders</span>
               <span className="text-sm font-bold text-slate-800">
-                {statData ? statData.total_feeders : '3'}
+                {statData?.total_feeders != null ? statData.total_feeders : '3'}
               </span>
             </div>
 
             <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
               <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Total Transformers</span>
               <span className="text-sm font-bold text-slate-800">
-                {statData ? statData.total_transformers : '15'}
+                {statData?.total_transformers != null ? statData.total_transformers : '15'}
               </span>
             </div>
 
             <div className="p-4 bg-slate-50 border border-slate-200/80 rounded-xl space-y-1">
               <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">Total Poles</span>
               <span className="text-sm font-bold text-slate-800">
-                {statData ? statData.total_poles.toLocaleString() : (analyticsOverview ? analyticsOverview.total_poles.toLocaleString() : '831')}
+                {statData?.total_poles != null ? Number(statData.total_poles).toLocaleString() : (analyticsOverview?.total_poles != null ? Number(analyticsOverview.total_poles).toLocaleString() : '831')}
               </span>
             </div>
 
@@ -400,9 +396,7 @@ const SystemSettings = () => {
         </CardContent>
       </Card>
 
-      {/* --------------------------------------------------------------------- */}
       {/* SECTION 2 & SECTION 3 (2-column layout) */}
-      {/* --------------------------------------------------------------------- */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Section 2 — Fault Detection Configuration */}
         <Card>
@@ -413,7 +407,6 @@ const SystemSettings = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Deploy Warning Banner */}
             <div className="p-3.5 bg-amber-50 border border-amber-200/80 rounded-xl flex items-center gap-3 text-xs text-amber-800">
               <FiAlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
               <span className="font-semibold">Note: Changes require backend deployment to affect live grid localized algorithms.</span>
@@ -569,9 +562,7 @@ const SystemSettings = () => {
         </Card>
       </div>
 
-      {/* --------------------------------------------------------------------- */}
       {/* SECTION 4 — Notification Preferences */}
-      {/* --------------------------------------------------------------------- */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -637,9 +628,7 @@ const SystemSettings = () => {
         </CardContent>
       </Card>
 
-      {/* --------------------------------------------------------------------- */}
       {/* SECTION 5 — API Endpoints Directory */}
-      {/* --------------------------------------------------------------------- */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -708,9 +697,7 @@ const SystemSettings = () => {
         </CardContent>
       </Card>
 
-      {/* --------------------------------------------------------------------- */}
       {/* SECTION 6 — System Statistics */}
-      {/* --------------------------------------------------------------------- */}
       <div>
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-base font-semibold text-slate-800 flex items-center gap-2">
@@ -723,7 +710,7 @@ const SystemSettings = () => {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           <StatCard
             title="Total Faults Isolated"
-            value={analyticsOverview ? (analyticsOverview.active_faults + analyticsOverview.resolved_faults).toLocaleString() : '3'}
+            value={analyticsOverview ? ((analyticsOverview.active_faults ?? 0) + (analyticsOverview.resolved_faults ?? 0)).toLocaleString() : '3'}
             statusText="Deterministic Boundary Incidents"
             icon={FiAlertTriangle}
             colorTheme="red"
@@ -731,7 +718,7 @@ const SystemSettings = () => {
 
           <StatCard
             title="Open Maintenance Tickets"
-            value={analyticsOverview ? analyticsOverview.open_tickets.toLocaleString() : '5'}
+            value={analyticsOverview?.open_tickets != null ? Number(analyticsOverview.open_tickets).toLocaleString() : '5'}
             statusText="NEW / ACKNOWLEDGED / ASSIGNED"
             icon={FiClipboard}
             colorTheme="amber"
@@ -739,7 +726,7 @@ const SystemSettings = () => {
 
           <StatCard
             title="Closed Tickets"
-            value={analyticsOverview ? analyticsOverview.closed_tickets.toLocaleString() : '42'}
+            value={analyticsOverview?.closed_tickets != null ? Number(analyticsOverview.closed_tickets).toLocaleString() : '42'}
             statusText="Completed Work Orders"
             icon={FiCheckCircle}
             colorTheme="emerald"
@@ -747,7 +734,7 @@ const SystemSettings = () => {
 
           <StatCard
             title="Telemetry Events (24h)"
-            value={analyticsOverview ? analyticsOverview.telemetry_today.toLocaleString() : '14,820'}
+            value={analyticsOverview?.telemetry_today != null ? Number(analyticsOverview.telemetry_today).toLocaleString() : '14,820'}
             statusText="Validated Ingestion Payloads"
             icon={FiActivity}
             colorTheme="blue"
@@ -763,7 +750,7 @@ const SystemSettings = () => {
 
           <StatCard
             title="Network Availability"
-            value={analyticsOverview ? `${analyticsOverview.network_health}%` : '99.8%'}
+            value={analyticsOverview?.network_health != null ? `${analyticsOverview.network_health}%` : '99.8%'}
             statusText="Grid Energized Ratio"
             icon={FiCheckSquare}
             colorTheme="emerald"
@@ -771,9 +758,7 @@ const SystemSettings = () => {
         </div>
       </div>
 
-      {/* --------------------------------------------------------------------- */}
       {/* SECTION 7 & SECTION 8 (2-column layout) */}
-      {/* --------------------------------------------------------------------- */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Section 7 — Export & Maintenance */}
         <Card>

@@ -36,7 +36,7 @@ const TelemetryPage = () => {
   const fetchStatistics = async () => {
     try {
       const data = await apiClient.get('/telemetry/statistics');
-      setStats(data);
+      setStats(data || null);
     } catch (err) {
       console.error('Failed to fetch telemetry statistics:', err);
     }
@@ -53,10 +53,11 @@ const TelemetryPage = () => {
         out_of_order: outOfOrderFilter,
       });
       const data = await apiClient.get(`/telemetry?${queryParams.toString()}`);
-      setTelemetryList(data.telemetry);
-      setPagination(data.pagination);
+      setTelemetryList(Array.isArray(data?.telemetry) ? data.telemetry : []);
+      setPagination(data?.pagination ?? { page: 1, page_size: 20, total_records: 0, total_pages: 1 });
     } catch (err) {
       console.error('Failed to fetch telemetry stream:', err);
+      setTelemetryList([]);
     } finally {
       setLoading(false);
     }
@@ -102,35 +103,35 @@ const TelemetryPage = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard
           title="Total Telemetry"
-          value={stats ? stats.total_telemetry.toLocaleString() : '---'}
+          value={stats?.total_telemetry != null ? Number(stats.total_telemetry).toLocaleString() : '---'}
           statusText="Ingested Events"
           icon={FiActivity}
           colorTheme="blue"
         />
         <StatCard
           title="Power Outages"
-          value={stats ? stats.power_lost.toLocaleString() : '---'}
+          value={stats?.power_lost != null ? Number(stats.power_lost).toLocaleString() : '---'}
           statusText="Power Lost Events"
           icon={FiPower}
           colorTheme="red"
         />
         <StatCard
           title="Power Restored"
-          value={stats ? stats.power_restored.toLocaleString() : '---'}
+          value={stats?.power_restored != null ? Number(stats.power_restored).toLocaleString() : '---'}
           statusText="Restoration Events"
           icon={FiCheckCircle}
           colorTheme="emerald"
         />
         <StatCard
           title="Online Devices"
-          value={stats ? stats.currently_online_devices.toLocaleString() : '---'}
+          value={stats?.currently_online_devices != null ? Number(stats.currently_online_devices).toLocaleString() : '---'}
           statusText="Communicated < 15m"
           icon={FiRadio}
           colorTheme="blue"
         />
         <StatCard
           title="Out of Order"
-          value={stats ? stats.out_of_order_messages.toLocaleString() : '---'}
+          value={stats?.out_of_order_messages != null ? Number(stats.out_of_order_messages).toLocaleString() : '---'}
           statusText="Sequence Lag Messages"
           icon={FiAlertTriangle}
           colorTheme="amber"
@@ -209,28 +210,28 @@ const TelemetryPage = () => {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
-                {telemetryList.length > 0 ? (
+                {Array.isArray(telemetryList) && telemetryList.length > 0 ? (
                   telemetryList.map((t) => (
-                    <tr key={t.id} className="hover:bg-slate-50/60 transition-colors">
+                    <tr key={t?.id} className="hover:bg-slate-50/60 transition-colors">
                       <td className="px-6 py-3.5 font-mono text-slate-500">
-                        {formatDate(t.event_timestamp)}
+                        {formatDate(t?.event_timestamp)}
                       </td>
                       <td className="px-6 py-3.5 font-bold text-slate-900 font-mono">
-                        {t.device_id}
+                        {t?.device_id || 'N/A'}
                       </td>
                       <td className="px-6 py-3.5 font-semibold text-brand-700 font-mono">
-                        {t.pole_code}
+                        {t?.pole_code || 'N/A'}
                       </td>
                       <td className="px-6 py-3.5">
                         <div className="flex items-center gap-1.5">
                           <span
                             className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] uppercase font-semibold border ${
-                              eventBadgeMap[t.event] || 'bg-slate-100 text-slate-700 border-slate-200'
+                              eventBadgeMap[t?.event] || 'bg-slate-100 text-slate-700 border-slate-200'
                             }`}
                           >
-                            {t.event.replace('_', ' ')}
+                            {t?.event ? String(t.event).replace('_', ' ') : 'UNKNOWN'}
                           </span>
-                          {t.out_of_order && (
+                          {t?.out_of_order && (
                             <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded text-[9px] font-bold" title="Out of Order Sequence">
                               LAG
                             </span>
@@ -238,16 +239,16 @@ const TelemetryPage = () => {
                         </div>
                       </td>
                       <td className="px-6 py-3.5 font-mono font-medium text-slate-800">
-                        #{t.sequence_number}
+                        #{t?.sequence_number ?? 0}
                       </td>
                       <td className="px-6 py-3.5 font-mono text-slate-600">
-                        {t.battery_mv ? `${t.battery_mv} mV` : '---'}
+                        {t?.battery_mv != null ? `${t.battery_mv} mV` : '---'}
                       </td>
                       <td className="px-6 py-3.5 font-mono text-slate-600">
-                        {t.rssi ? `${t.rssi} dBm` : '---'}
+                        {t?.rssi != null ? `${t.rssi} dBm` : '---'}
                       </td>
                       <td className="px-6 py-3.5 font-mono text-slate-500">
-                        {t.firmware_version || '1.0.0'}
+                        {t?.firmware_version || '1.0.0'}
                       </td>
                       <td className="px-6 py-3.5 text-right">
                         <button
@@ -275,7 +276,7 @@ const TelemetryPage = () => {
         {/* Pagination Footer */}
         <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-100 flex items-center justify-between text-xs text-slate-600">
           <span>
-            Page <strong>{pagination.page}</strong> of <strong>{pagination.total_pages}</strong> ({pagination.total_records} total telemetry events)
+            Page <strong>{pagination?.page ?? 1}</strong> of <strong>{pagination?.total_pages ?? 1}</strong> ({pagination?.total_records ?? 0} total telemetry events)
           </span>
 
           <div className="flex items-center gap-2">
@@ -287,8 +288,8 @@ const TelemetryPage = () => {
               <FiChevronLeft className="w-4 h-4" />
             </button>
             <button
-              onClick={() => setPage((prev) => Math.min(prev + 1, pagination.total_pages))}
-              disabled={page >= pagination.total_pages}
+              onClick={() => setPage((prev) => Math.min(prev + 1, pagination?.total_pages ?? 1))}
+              disabled={page >= (pagination?.total_pages ?? 1)}
               className="p-1.5 border border-slate-200 bg-white rounded-lg disabled:opacity-40 hover:bg-slate-50"
             >
               <FiChevronRight className="w-4 h-4" />

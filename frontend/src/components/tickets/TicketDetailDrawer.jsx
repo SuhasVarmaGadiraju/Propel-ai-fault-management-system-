@@ -22,14 +22,14 @@ import { formatDate } from '../../utils/helpers';
 const TicketDetailDrawer = ({ ticket, onClose, onRefresh }) => {
   if (!ticket) return null;
 
-  const [assignedEngineer, setAssignedEngineer] = useState(ticket.assigned_engineer || '');
-  const [assignedTeam, setAssignedTeam] = useState(ticket.assigned_team || 'Crew Alpha');
+  const [assignedEngineer, setAssignedEngineer] = useState(ticket?.assigned_engineer || '');
+  const [assignedTeam, setAssignedTeam] = useState(ticket?.assigned_team || 'Crew Alpha');
   const [updating, setUpdating] = useState(false);
   const [actionError, setActionError] = useState(null);
   const [actionSuccess, setActionSuccess] = useState(null);
 
   const stages = ['NEW', 'ACKNOWLEDGED', 'ASSIGNED', 'RESOLVED', 'VERIFIED', 'CLOSED'];
-  const currentStageIdx = stages.indexOf(ticket.status);
+  const currentStageIdx = ticket?.status ? stages.indexOf(ticket.status) : 0;
 
   const handleStatusTransition = async (newStatus) => {
     setUpdating(true);
@@ -44,7 +44,7 @@ const TicketDetailDrawer = ({ ticket, onClose, onRefresh }) => {
       };
       await apiClient.patch(`/tickets/${ticket.ticket_number}`, payload);
       setActionSuccess(`Ticket status updated to ${newStatus}.`);
-      onRefresh();
+      if (onRefresh) onRefresh();
     } catch (err) {
       setActionError(err.message || 'Status transition failed.');
     } finally {
@@ -59,8 +59,8 @@ const TicketDetailDrawer = ({ ticket, onClose, onRefresh }) => {
 
     try {
       const data = await apiClient.post(`/tickets/${ticket.ticket_number}/verify`);
-      setActionSuccess(data.message || 'Auto-verification successful.');
-      onRefresh();
+      setActionSuccess(data?.message || 'Auto-verification successful.');
+      if (onRefresh) onRefresh();
     } catch (err) {
       setActionError(err.message || 'Auto-verification failed. Outage telemetry remains dark.');
     } finally {
@@ -79,7 +79,7 @@ const TicketDetailDrawer = ({ ticket, onClose, onRefresh }) => {
         assigned_team: assignedTeam,
       });
       setActionSuccess('Engineer assignment saved successfully.');
-      onRefresh();
+      if (onRefresh) onRefresh();
     } catch (err) {
       setActionError(err.message || 'Failed to update assignment.');
     } finally {
@@ -114,8 +114,8 @@ const TicketDetailDrawer = ({ ticket, onClose, onRefresh }) => {
                 <FiClipboard className="w-5 h-5 text-white" />
               </div>
               <div>
-                <h2 className="text-base font-bold tracking-tight font-mono">{ticket.ticket_number}</h2>
-                <p className="text-[11px] text-slate-400 font-mono">Incident: {ticket.incident_id}</p>
+                <h2 className="text-base font-bold tracking-tight font-mono">{ticket?.ticket_number || 'N/A'}</h2>
+                <p className="text-[11px] text-slate-400 font-mono">Incident: {ticket?.incident_id || 'N/A'}</p>
               </div>
             </div>
             <button onClick={onClose} className="p-1 text-slate-400 hover:text-white rounded-lg">
@@ -128,14 +128,14 @@ const TicketDetailDrawer = ({ ticket, onClose, onRefresh }) => {
             {/* Status & Priority Badges */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <span className={`px-2.5 py-1 rounded-full text-xs uppercase tracking-wider font-semibold border ${statusBadgeMap[ticket.status]}`}>
-                  {ticket.status}
+                <span className={`px-2.5 py-1 rounded-full text-xs uppercase tracking-wider font-semibold border ${statusBadgeMap[ticket?.status] || ''}`}>
+                  {ticket?.status || 'NEW'}
                 </span>
-                <span className={`px-2.5 py-1 rounded-full text-xs uppercase tracking-wider border ${priorityBadgeMap[ticket.priority]}`}>
-                  {ticket.priority} Priority
+                <span className={`px-2.5 py-1 rounded-full text-xs uppercase tracking-wider border ${priorityBadgeMap[ticket?.priority] || ''}`}>
+                  {ticket?.priority || 'MEDIUM'} Priority
                 </span>
               </div>
-              <span className="font-bold text-slate-700 text-xs">{ticket.confidence}% Confidence</span>
+              <span className="font-bold text-slate-700 text-xs">{ticket?.confidence != null ? ticket.confidence : '---'}% Confidence</span>
             </div>
 
             {/* Action Alert Banner */}
@@ -185,7 +185,7 @@ const TicketDetailDrawer = ({ ticket, onClose, onRefresh }) => {
                 Workflow Action Controls
               </h3>
               <div className="flex flex-wrap gap-2">
-                {ticket.status === 'NEW' && (
+                {ticket?.status === 'NEW' && (
                   <button
                     onClick={() => handleStatusTransition('ACKNOWLEDGED')}
                     disabled={updating}
@@ -195,7 +195,7 @@ const TicketDetailDrawer = ({ ticket, onClose, onRefresh }) => {
                   </button>
                 )}
 
-                {(ticket.status === 'NEW' || ticket.status === 'ACKNOWLEDGED') && (
+                {(ticket?.status === 'NEW' || ticket?.status === 'ACKNOWLEDGED') && (
                   <button
                     onClick={() => handleStatusTransition('ASSIGNED')}
                     disabled={updating || !assignedEngineer}
@@ -205,7 +205,7 @@ const TicketDetailDrawer = ({ ticket, onClose, onRefresh }) => {
                   </button>
                 )}
 
-                {ticket.status === 'ASSIGNED' && (
+                {ticket?.status === 'ASSIGNED' && (
                   <button
                     onClick={() => handleStatusTransition('RESOLVED')}
                     disabled={updating}
@@ -215,7 +215,7 @@ const TicketDetailDrawer = ({ ticket, onClose, onRefresh }) => {
                   </button>
                 )}
 
-                {ticket.status === 'RESOLVED' && (
+                {ticket?.status === 'RESOLVED' && (
                   <button
                     onClick={handleAutoVerify}
                     disabled={updating}
@@ -226,7 +226,7 @@ const TicketDetailDrawer = ({ ticket, onClose, onRefresh }) => {
                   </button>
                 )}
 
-                {ticket.status === 'VERIFIED' && (
+                {ticket?.status === 'VERIFIED' && (
                   <button
                     onClick={() => handleStatusTransition('CLOSED')}
                     disabled={updating}
@@ -284,23 +284,23 @@ const TicketDetailDrawer = ({ ticket, onClose, onRefresh }) => {
               <div className="grid grid-cols-2 gap-3 text-slate-700">
                 <div>
                   <span className="text-slate-400 block">Feeder</span>
-                  <span className="font-mono font-bold text-slate-900">{ticket.feeder_code}</span>
+                  <span className="font-mono font-bold text-slate-900">{ticket?.feeder_code || 'N/A'}</span>
                 </div>
                 <div>
                   <span className="text-slate-400 block">Transformer</span>
-                  <span className="font-mono font-bold text-slate-900">{ticket.transformer_code || 'N/A'}</span>
+                  <span className="font-mono font-bold text-slate-900">{ticket?.transformer_code || 'N/A'}</span>
                 </div>
                 <div>
                   <span className="text-slate-400 block">Upstream Pole</span>
-                  <span className="font-mono font-bold text-emerald-700">{ticket.upstream_pole || 'N/A'}</span>
+                  <span className="font-mono font-bold text-emerald-700">{ticket?.upstream_pole || 'N/A'}</span>
                 </div>
                 <div>
                   <span className="text-slate-400 block">Downstream Pole</span>
-                  <span className="font-mono font-bold text-red-700">{ticket.downstream_pole || 'N/A'}</span>
+                  <span className="font-mono font-bold text-red-700">{ticket?.downstream_pole || 'N/A'}</span>
                 </div>
                 <div>
                   <span className="text-slate-400 block">Estimated Outage</span>
-                  <span className="font-bold text-slate-900">{ticket.estimated_households} Households</span>
+                  <span className="font-bold text-slate-900">{ticket?.estimated_households ?? 0} Households</span>
                 </div>
               </div>
             </div>
@@ -312,7 +312,7 @@ const TicketDetailDrawer = ({ ticket, onClose, onRefresh }) => {
                 Fault Localization Reasoning Summary
               </h3>
               <pre className="text-[11px] font-mono text-emerald-400 whitespace-pre-wrap leading-relaxed">
-                {ticket.reasoning_summary}
+                {ticket?.reasoning_summary || 'No reasoning summary available.'}
               </pre>
             </div>
 
@@ -322,12 +322,12 @@ const TicketDetailDrawer = ({ ticket, onClose, onRefresh }) => {
                 Audit Timestamp Trail
               </h3>
               <div className="space-y-1 text-[11px] text-slate-600 font-mono">
-                <div className="flex justify-between"><span>Created:</span> <span>{formatDate(ticket.created_at)}</span></div>
-                <div className="flex justify-between"><span>Acknowledged:</span> <span>{formatDate(ticket.acknowledged_at)}</span></div>
-                <div className="flex justify-between"><span>Assigned:</span> <span>{formatDate(ticket.assigned_at)}</span></div>
-                <div className="flex justify-between"><span>Resolved:</span> <span>{formatDate(ticket.resolved_at)}</span></div>
-                <div className="flex justify-between"><span>Verified:</span> <span>{formatDate(ticket.verified_at)}</span></div>
-                <div className="flex justify-between"><span>Closed:</span> <span>{formatDate(ticket.closed_at)}</span></div>
+                <div className="flex justify-between"><span>Created:</span> <span>{formatDate(ticket?.created_at)}</span></div>
+                <div className="flex justify-between"><span>Acknowledged:</span> <span>{formatDate(ticket?.acknowledged_at)}</span></div>
+                <div className="flex justify-between"><span>Assigned:</span> <span>{formatDate(ticket?.assigned_at)}</span></div>
+                <div className="flex justify-between"><span>Resolved:</span> <span>{formatDate(ticket?.resolved_at)}</span></div>
+                <div className="flex justify-between"><span>Verified:</span> <span>{formatDate(ticket?.verified_at)}</span></div>
+                <div className="flex justify-between"><span>Closed:</span> <span>{formatDate(ticket?.closed_at)}</span></div>
               </div>
             </div>
           </div>

@@ -43,11 +43,13 @@ const FaultsPage = () => {
     setLoading(true);
     try {
       const data = await apiClient.get('/faults/latest');
-      setSummary(data.summary);
-      setIncidents(data.incidents || []);
-      setAnomalies(data.sensor_anomalies || []);
+      setSummary(data?.summary || null);
+      setIncidents(Array.isArray(data?.incidents) ? data.incidents : []);
+      setAnomalies(Array.isArray(data?.sensor_anomalies) ? data.sensor_anomalies : []);
     } catch (err) {
       console.error('Failed to fetch fault localization results:', err);
+      setIncidents([]);
+      setAnomalies([]);
     } finally {
       setLoading(false);
     }
@@ -57,9 +59,9 @@ const FaultsPage = () => {
     setAnalyzing(true);
     try {
       const data = await apiClient.post('/faults/analyze');
-      setSummary(data.summary);
-      setIncidents(data.incidents || []);
-      setAnomalies(data.sensor_anomalies || []);
+      setSummary(data?.summary || null);
+      setIncidents(Array.isArray(data?.incidents) ? data.incidents : []);
+      setAnomalies(Array.isArray(data?.sensor_anomalies) ? data.sensor_anomalies : []);
     } catch (err) {
       console.error('Failed to run fault localization analysis:', err);
     } finally {
@@ -72,6 +74,7 @@ const FaultsPage = () => {
   }, []);
 
   const toggleReasoning = (incidentId) => {
+    if (!incidentId) return;
     setExpandedReasoning((prev) => ({
       ...prev,
       [incidentId]: !prev[incidentId]
@@ -79,18 +82,19 @@ const FaultsPage = () => {
   };
 
   // Filtered incidents list
-  const filteredIncidents = incidents.filter((inc) => {
+  const filteredIncidents = Array.isArray(incidents) ? incidents.filter((inc) => {
+    if (!inc) return false;
     const matchesType = filterType === 'ALL' || inc.fault_type === filterType;
     const matchesQuery =
       searchQuery === '' ||
-      inc.incident_id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      inc.feeder_code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (inc.incident_id && inc.incident_id.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (inc.feeder_code && inc.feeder_code.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (inc.transformer_code && inc.transformer_code.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (inc.upstream_pole && inc.upstream_pole.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (inc.downstream_pole && inc.downstream_pole.toLowerCase().includes(searchQuery.toLowerCase()));
 
     return matchesType && matchesQuery;
-  });
+  }) : [];
 
   const badgeThemeMap = {
     SPAN_FAULT: 'bg-amber-50 text-amber-700 border-amber-200 font-bold',
@@ -133,36 +137,36 @@ const FaultsPage = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <StatCard
           title="Active Faults"
-          value={summary ? summary.total_incidents : '---'}
+          value={summary?.total_incidents != null ? summary.total_incidents : '---'}
           statusText="Localized Outage Incidents"
           icon={FiAlertTriangle}
           colorTheme="red"
         />
         <StatCard
           title="Span Faults"
-          value={summary ? summary.span_faults : '---'}
+          value={summary?.span_faults != null ? summary.span_faults : '---'}
           statusText="Span & Unknown Spans"
           icon={FiZap}
           colorTheme="amber"
         />
         <StatCard
           title="Transformer Faults"
-          value={summary ? summary.transformer_faults : '---'}
+          value={summary?.transformer_faults != null ? summary.transformer_faults : '---'}
           statusText="DTR Station Outages"
           icon={FiRadio}
           colorTheme="red"
         />
         <StatCard
           title="Feeder Trips"
-          value={summary ? summary.feeder_faults : '---'}
+          value={summary?.feeder_faults != null ? summary.feeder_faults : '---'}
           statusText="11kV Main Line Trips"
           icon={FiZap}
           colorTheme="purple"
         />
         <StatCard
           title="Impacted Households"
-          value={summary ? summary.total_estimated_households.toLocaleString() : '---'}
-          statusText={`${summary ? summary.total_affected_poles : 0} Affected Poles`}
+          value={summary?.total_estimated_households != null ? Number(summary.total_estimated_households).toLocaleString() : '---'}
+          statusText={`${summary?.total_affected_poles ?? 0} Affected Poles`}
           icon={FiUsers}
           colorTheme="blue"
         />
@@ -219,7 +223,7 @@ const FaultsPage = () => {
                       badgeThemeMap[inc.fault_type] || 'bg-slate-100 text-slate-700'
                     }`}
                   >
-                    {inc.fault_type.replace('_', ' ')}
+                    {inc.fault_type ? String(inc.fault_type).replace('_', ' ') : 'FAULT'}
                   </span>
                 </div>
 
@@ -227,12 +231,12 @@ const FaultsPage = () => {
                 <div className="flex items-center gap-2">
                   <span
                     className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-extrabold border ${getConfidenceBadge(
-                      inc.confidence
+                      inc.confidence ?? 0
                     )}`}
                     title={inc.confidence_reason}
                   >
                     <FiTarget className="w-3.5 h-3.5" />
-                    {inc.confidence}% Confidence
+                    {inc.confidence ?? 0}% Confidence
                   </span>
                 </div>
               </div>
@@ -241,7 +245,7 @@ const FaultsPage = () => {
               <div className="grid grid-cols-2 gap-3 text-xs">
                 <div>
                   <span className="text-slate-400 block">Feeder Code</span>
-                  <span className="font-mono font-bold text-slate-900">{inc.feeder_code}</span>
+                  <span className="font-mono font-bold text-slate-900">{inc.feeder_code || 'N/A'}</span>
                 </div>
                 <div>
                   <span className="text-slate-400 block">Transformer Code</span>
@@ -252,11 +256,11 @@ const FaultsPage = () => {
                   <>
                     <div className="bg-emerald-50/70 border border-emerald-200 rounded-lg p-2">
                       <span className="text-emerald-800 block text-[10px] font-bold uppercase">Upstream Pole (Energized)</span>
-                      <span className="font-mono font-bold text-emerald-700 text-xs">{inc.upstream_pole}</span>
+                      <span className="font-mono font-bold text-emerald-700 text-xs">{inc.upstream_pole || 'N/A'}</span>
                     </div>
                     <div className="bg-red-50/70 border border-red-200 rounded-lg p-2">
                       <span className="text-red-800 block text-[10px] font-bold uppercase">Downstream Pole (Dark)</span>
-                      <span className="font-mono font-bold text-red-700 text-xs">{inc.downstream_pole}</span>
+                      <span className="font-mono font-bold text-red-700 text-xs">{inc.downstream_pole || 'N/A'}</span>
                     </div>
                   </>
                 )}
@@ -264,13 +268,13 @@ const FaultsPage = () => {
                 {inc.fault_type === 'UNKNOWN_SPAN' && (
                   <div className="col-span-2 bg-amber-50/70 border border-amber-200 rounded-lg p-2.5">
                     <span className="text-amber-800 block text-[10px] font-bold uppercase">Estimated Fault Area (Unknown Topology)</span>
-                    <span className="font-mono font-bold text-amber-900 text-xs">{inc.estimated_area || inc.transformer_code}</span>
+                    <span className="font-mono font-bold text-amber-900 text-xs">{inc.estimated_area || inc.transformer_code || 'N/A'}</span>
                   </div>
                 )}
               </div>
 
               {/* Possible Fault Range Pill List (Gap Traversal) */}
-              {inc.possible_fault_range && inc.possible_fault_range.length > 0 && (
+              {Array.isArray(inc.possible_fault_range) && inc.possible_fault_range.length > 0 && (
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-1 text-xs">
                   <span className="text-slate-500 font-bold uppercase text-[10px] block">
                     Possible Fault Range (Span / Gaps):
@@ -296,7 +300,7 @@ const FaultsPage = () => {
                     Deterministic Diagnosis
                   </span>
 
-                  {inc.reasoning && (
+                  {Array.isArray(inc.reasoning) && inc.reasoning.length > 0 && (
                     <button
                       onClick={() => toggleReasoning(inc.incident_id)}
                       className="text-brand-600 hover:text-brand-700 font-semibold text-[11px] flex items-center gap-1"
@@ -307,10 +311,10 @@ const FaultsPage = () => {
                   )}
                 </div>
 
-                <p className="text-slate-600 leading-relaxed">{inc.reason}</p>
+                <p className="text-slate-600 leading-relaxed">{inc.reason || 'No diagnostic rationale provided.'}</p>
 
                 {/* Step-by-Step Narrative Array */}
-                {expandedReasoning[inc.incident_id] && inc.reasoning && (
+                {expandedReasoning[inc.incident_id] && Array.isArray(inc.reasoning) && (
                   <div className="mt-2 pt-2 border-t border-slate-200 space-y-1.5 bg-white p-3 rounded-lg border">
                     <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
                       Step-by-Step Reasoning Logic:
@@ -329,7 +333,7 @@ const FaultsPage = () => {
                 <div className="flex items-center gap-1.5 text-slate-600">
                   <FiCpu className="w-4 h-4 text-slate-400" />
                   <span>
-                    <strong>{inc.affected_poles_count}</strong> Affected Poles ({inc.estimated_households} est. households)
+                    <strong>{inc.affected_poles_count ?? 0}</strong> Affected Poles ({inc.estimated_households ?? 0} est. households)
                   </span>
                 </div>
                 <span className="text-[10px] text-slate-400 font-mono">{formatDate(inc.detected_at)}</span>
@@ -348,7 +352,7 @@ const FaultsPage = () => {
       )}
 
       {/* Telemetry Sensor Anomalies Panel */}
-      {anomalies.length > 0 && (
+      {Array.isArray(anomalies) && anomalies.length > 0 && (
         <Card className="p-6 space-y-4 border-l-4 border-l-amber-500 bg-amber-50/30">
           <div className="flex items-center justify-between border-b border-amber-200/60 pb-3">
             <h3 className="text-sm font-bold text-amber-900 uppercase tracking-wider flex items-center gap-2">
@@ -364,10 +368,10 @@ const FaultsPage = () => {
             {anomalies.map((anom, idx) => (
               <div key={idx} className="p-3 bg-white border border-amber-200 rounded-lg flex items-center justify-between text-slate-700">
                 <div className="space-y-0.5">
-                  <span className="font-mono font-bold text-amber-900">{anom.pole_code}</span>
-                  <p className="text-slate-500 text-[11px]">{anom.reason}</p>
+                  <span className="font-mono font-bold text-amber-900">{anom?.pole_code || 'N/A'}</span>
+                  <p className="text-slate-500 text-[11px]">{anom?.reason || 'Anomaly detected'}</p>
                 </div>
-                <span className="font-mono text-[11px] text-slate-400">{anom.device_id}</span>
+                <span className="font-mono text-[11px] text-slate-400">{anom?.device_id || 'N/A'}</span>
               </div>
             ))}
           </div>
