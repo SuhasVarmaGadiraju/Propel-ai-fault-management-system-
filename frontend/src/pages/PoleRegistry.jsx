@@ -47,14 +47,15 @@ const PoleRegistry = () => {
   const fetchPoles = useCallback(async () => {
     setLoading(true);
     try {
-      const queryParams = new URLSearchParams({
-        page,
-        page_size: 20,
-        search: searchTerm,
-        feeder_code: feederFilter,
-        device_installed: deviceFilter,
+      const data = await apiClient.get('/pole-registry', {
+        params: {
+          page,
+          page_size: 20,
+          search: searchTerm || undefined,
+          feeder_code: feederFilter || undefined,
+          device_installed: deviceFilter || undefined,
+        },
       });
-      const data = await apiClient.get(`/pole-registry?${queryParams.toString()}`);
       setPoles(Array.isArray(data?.poles) ? data.poles : []);
       setPagination(data?.pagination ?? { page: 1, page_size: 20, total_records: 0, total_pages: 1 });
     } catch (err) {
@@ -230,20 +231,22 @@ const PoleRegistry = () => {
                       </td>
                       <td className="px-6 py-3.5">
                         <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${p?.topology_known
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${
+                            p?.topology_known
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : 'bg-amber-50 text-amber-700 border border-amber-200'
-                            }`}
+                          }`}
                         >
                           {p?.topology_known ? 'Mapped' : 'Unknown'}
                         </span>
                       </td>
                       <td className="px-6 py-3.5">
                         <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${p?.device_installed
+                          className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold ${
+                            p?.device_installed
                               ? 'bg-brand-50 text-brand-700 border border-brand-200'
                               : 'bg-slate-100 text-slate-500 border border-slate-200'
-                            }`}
+                          }`}
                         >
                           {p?.device_installed ? 'Installed' : 'No Device'}
                         </span>

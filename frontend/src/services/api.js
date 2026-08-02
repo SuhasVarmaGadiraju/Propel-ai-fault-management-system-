@@ -3,8 +3,23 @@ import axios from 'axios';
 /**
  * Production-ready Axios HTTP client configuration
  */
+let envBaseUrl = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
+
+if (typeof envBaseUrl === 'string') {
+  envBaseUrl = envBaseUrl.trim();
+  // Strip accidental variable name prefix if full key=value line was set in env configuration
+  if (envBaseUrl.startsWith('VITE_API_BASE_URL=')) {
+    envBaseUrl = envBaseUrl.replace(/^VITE_API_BASE_URL=/, '').trim();
+  }
+  if (envBaseUrl.startsWith('VITE_API_URL=')) {
+    envBaseUrl = envBaseUrl.replace(/^VITE_API_URL=/, '').trim();
+  }
+  // Strip enclosing quotes if present
+  envBaseUrl = envBaseUrl.replace(/^["']|["']$/g, '');
+}
+
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api/v1',
+  baseURL: envBaseUrl,
   headers: {
     'Content-Type': 'application/json',
   },

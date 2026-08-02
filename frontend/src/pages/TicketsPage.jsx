@@ -49,14 +49,15 @@ const TicketsPage = () => {
   const fetchTickets = useCallback(async () => {
     setLoading(true);
     try {
-      const queryParams = new URLSearchParams({
-        page,
-        page_size: 20,
-        search,
-        status: statusFilter,
-        priority: priorityFilter,
+      const data = await apiClient.get('/tickets', {
+        params: {
+          page,
+          page_size: 20,
+          search: search || undefined,
+          status: statusFilter || undefined,
+          priority: priorityFilter || undefined,
+        },
       });
-      const data = await apiClient.get(`/tickets?${queryParams.toString()}`);
       setTickets(Array.isArray(data?.tickets) ? data.tickets : []);
       setPagination(data?.pagination ?? { page: 1, page_size: 20, total_records: 0, total_pages: 1 });
     } catch (err) {

@@ -45,14 +45,15 @@ const TelemetryPage = () => {
   const fetchTelemetry = useCallback(async () => {
     setLoading(true);
     try {
-      const queryParams = new URLSearchParams({
-        page,
-        page_size: 20,
-        device_id: searchDevice,
-        event: eventFilter,
-        out_of_order: outOfOrderFilter,
+      const data = await apiClient.get('/telemetry', {
+        params: {
+          page,
+          page_size: 20,
+          device_id: searchDevice || undefined,
+          event: eventFilter || undefined,
+          out_of_order: outOfOrderFilter || undefined,
+        },
       });
-      const data = await apiClient.get(`/telemetry?${queryParams.toString()}`);
       setTelemetryList(Array.isArray(data?.telemetry) ? data.telemetry : []);
       setPagination(data?.pagination ?? { page: 1, page_size: 20, total_records: 0, total_pages: 1 });
     } catch (err) {

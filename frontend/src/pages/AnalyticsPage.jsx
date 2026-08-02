@@ -59,8 +59,8 @@ const AnalyticsPage = () => {
   }, []);
 
   const handleExport = (dataset, format) => {
-    const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000/api/v1';
-    window.open(`${backendUrl}/analytics/export/${dataset}?format=${format}`, '_blank');
+    const baseUrl = apiClient.defaults.baseURL || 'http://localhost:5000/api/v1';
+    window.open(`${baseUrl}/analytics/export/${dataset}?format=${format}`, '_blank');
   };
 
   if (loading) {
