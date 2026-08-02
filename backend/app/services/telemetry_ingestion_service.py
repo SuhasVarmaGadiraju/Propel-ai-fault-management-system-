@@ -83,6 +83,7 @@ class TelemetryIngestionService:
         Returns result dict and HTTP status code.
         """
         try:
+            logger.info("STEP 1: Validating payload")
             is_valid, err_msg, data = cls.validate_payload(payload)
             if not is_valid or not data:
                 return {
@@ -94,6 +95,7 @@ class TelemetryIngestionService:
                     }
                 }, 400
 
+            logger.info("STEP 2: Looking up pole")
             # Resolve Pole first
             pole = Pole.query.filter(
                 (Pole.pole_code == data["pole_id_raw"]) | (db.cast(Pole.id, db.String) == data["pole_id_raw"])
@@ -113,9 +115,11 @@ class TelemetryIngestionService:
                     }
                 }, 404
 
+            logger.info("STEP 3: Looking up device")
             # Resolve or create Device
             device = Device.query.filter_by(device_id=data["device_id_raw"]).first()
             if not device:
+                logger.info("STEP 3b: Creating device")
                 # Link to pole if pole does not have an attached device yet
                 target_pole_id = pole.id if pole.device is None else None
                 device = Device(
@@ -159,6 +163,7 @@ class TelemetryIngestionService:
                     f"Seq {data['sequence_number']} < Last {device.last_sequence}."
                 )
 
+            logger.info("STEP 4: Creating telemetry object")
             # Store Telemetry Record
             telemetry = Telemetry(
                 device_id=device.id,
@@ -173,6 +178,8 @@ class TelemetryIngestionService:
                 event_timestamp=data["event_timestamp"],
                 received_timestamp=datetime.now(timezone.utc)
             )
+
+            logger.info("STEP 5: Adding telemetry")
             db.session.add(telemetry)
 
             # Update Device Operational State ONLY if the message is in-sequence (or first message)
@@ -191,8 +198,10 @@ class TelemetryIngestionService:
                 if data["event"] == TelemetryEvent.HEARTBEAT:
                     device.last_heartbeat = data["event_timestamp"]
 
+            logger.info("STEP 6: Committing transaction")
             db.session.commit()
 
+            logger.info("STEP 7: Success")
             return {
                 "status": "success",
                 "message": "Telemetry event ingested successfully.",
@@ -203,16 +212,18 @@ class TelemetryIngestionService:
                 "out_of_order": out_of_order
             }, 201
         except Exception as e:
+            import traceback
+
             db.session.rollback()
-            logger.error(f"Error during telemetry ingestion: {e}", exc_info=True)
-            return {
-                "status": "error",
-                "error": {
-                    "code": 500,
-                    "name": "Internal Server Error",
-                    "description": f"Failed to process telemetry payload: {str(e)}"
-                }
-            }, 500
+
+            print("\n" + "=" * 80)
+            print("TELEMETRY INGESTION FAILED")
+            traceback.print_exc()
+            print("=" * 80 + "\n")
+
+            logger.exception("Telemetry ingestion failed")
+
+            raise
 
     @classmethod
     def ingest_bulk(cls, payloads: List[Dict[str, Any]]) -> Tuple[Dict[str, Any], int]:
