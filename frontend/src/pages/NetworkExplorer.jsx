@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   FiGitBranch,
   FiRefreshCw,
@@ -18,6 +18,79 @@ import Card from '../components/ui/Card';
 import StatCard from '../components/dashboard/StatCard';
 import Loading from '../components/common/Loading';
 import NetworkTreeNode from '../components/network/NetworkTreeNode';
+
+/**
+ * Helper function to match string query against code or name.
+ */
+const matchesQuery = (str, q) => Boolean(str && String(str).toLowerCase().includes(q));
+
+/**
+ * Helper function to check if a node itself matches the search query.
+ */
+const isDirectMatch = (node, q) => matchesQuery(node?.code, q) || matchesQuery(node?.name, q);
+
+/**
+ * Recursively filters pole tree nodes.
+ */
+const filterPole = (pole, q) => {
+  if (!pole) return null;
+  const isMatch = isDirectMatch(pole, q);
+  const filteredChildren = Array.isArray(pole.children)
+    ? pole.children.map((child) => filterPole(child, q)).filter(Boolean)
+    : [];
+
+  if (isMatch) {
+    return { ...pole };
+  }
+
+  if (filteredChildren.length > 0) {
+    return { ...pole, children: filteredChildren };
+  }
+
+  return null;
+};
+
+/**
+ * Recursively filters transformer tree nodes.
+ */
+const filterTransformer = (tr, q) => {
+  if (!tr) return null;
+  const isMatch = isDirectMatch(tr, q);
+  const filteredPoles = Array.isArray(tr.root_poles)
+    ? tr.root_poles.map((pole) => filterPole(pole, q)).filter(Boolean)
+    : [];
+
+  if (isMatch) {
+    return { ...tr };
+  }
+
+  if (filteredPoles.length > 0) {
+    return { ...tr, root_poles: filteredPoles };
+  }
+
+  return null;
+};
+
+/**
+ * Recursively filters feeder tree nodes.
+ */
+const filterFeeder = (feeder, q) => {
+  if (!feeder) return null;
+  const isMatch = isDirectMatch(feeder, q);
+  const filteredTransformers = Array.isArray(feeder.transformers)
+    ? feeder.transformers.map((tr) => filterTransformer(tr, q)).filter(Boolean)
+    : [];
+
+  if (isMatch) {
+    return { ...feeder };
+  }
+
+  if (filteredTransformers.length > 0) {
+    return { ...feeder, transformers: filteredTransformers };
+  }
+
+  return null;
+};
 
 /**
  * Developer Network Explorer Page for interactive graph tree navigation and node inspection.
@@ -57,6 +130,15 @@ const NetworkExplorer = () => {
   useEffect(() => {
     fetchGraphData();
   }, []);
+
+  // Memoized client-side tree search filtering
+  const filteredTreeData = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return treeData;
+    if (!Array.isArray(treeData)) return [];
+
+    return treeData.map((feeder) => filterFeeder(feeder, q)).filter(Boolean);
+  }, [treeData, searchQuery]);
 
   const handleRebuildGraph = async () => {
     setRebuilding(true);
@@ -179,8 +261,8 @@ const NetworkExplorer = () => {
           <div className="flex-1 overflow-y-auto pr-1 space-y-2 border border-slate-100 rounded-xl p-3 bg-slate-50/50">
             {loading ? (
               <Loading message="Constructing network tree..." />
-            ) : Array.isArray(treeData) && treeData.length > 0 ? (
-              treeData.map((feederNode) => (
+            ) : Array.isArray(filteredTreeData) && filteredTreeData.length > 0 ? (
+              filteredTreeData.map((feederNode) => (
                 <NetworkTreeNode
                   key={feederNode?.id || feederNode?.code}
                   node={feederNode}
@@ -191,7 +273,7 @@ const NetworkExplorer = () => {
               ))
             ) : (
               <div className="text-center py-10 text-slate-400 text-xs italic">
-                No network tree nodes loaded.
+                {searchQuery.trim() ? 'No matching nodes found.' : 'No network tree nodes loaded.'}
               </div>
             )}
           </div>
