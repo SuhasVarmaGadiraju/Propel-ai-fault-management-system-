@@ -58,6 +58,9 @@ def ingest_telemetry_bulk():
                 }
             }), 400
 
+        from app.models.simulator_usage import SimulatorUsage
+        SimulatorUsage.increment("bulk_ingestion", "Bulk Ingestion")
+
         result, status_code = TelemetryIngestionService.ingest_bulk(payloads)
         return jsonify(result), status_code
     except Exception as e:

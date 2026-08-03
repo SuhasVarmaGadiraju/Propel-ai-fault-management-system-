@@ -124,3 +124,21 @@ def test_analytics_export_endpoints(client):
     res_json = client.get("/api/v1/analytics/export/simulator?format=json")
     assert res_json.status_code == 200
     assert "application/json" in res_json.content_type
+
+
+def test_simulator_usage_tracking(client):
+    """Test persistent SimulatorUsage counter tracking and analytics API."""
+    # 1. Track custom action via /simulator/track
+    res_track = client.post("/api/v1/simulator/track", json={"action": "duplicate", "label": "Duplicate Packets"})
+    assert res_track.status_code == 200
+    assert res_track.get_json()["usage"]["execution_count"] >= 1
+
+    # 2. Verify /analytics/simulator reflects incremented usage
+    res_analytics = client.get("/api/v1/analytics/simulator")
+    assert res_analytics.status_code == 200
+    data = res_analytics.get_json()
+
+    assert "usage" in data
+    assert "duplicate" in data["usage"]
+    assert data["usage"]["duplicate"]["count"] >= 1
+    assert data["total_executions"] >= 1

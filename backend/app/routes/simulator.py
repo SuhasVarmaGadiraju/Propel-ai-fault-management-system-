@@ -147,6 +147,30 @@ def propagate_outage():
         }), 500
 
 
+@simulator_bp.route("/track", methods=["POST"])
+def track_usage():
+    """
+    POST /api/v1/simulator/track
+    Increments SimulatorUsage counter for custom simulator testing actions.
+    """
+    payload = request.get_json(silent=True) or {}
+    action = payload.get("action") or payload.get("scenario_key")
+    label = payload.get("label")
+
+    if not action:
+        return jsonify({
+            "status": "error",
+            "message": "Missing required field 'action' or 'scenario_key'."
+        }), 400
+
+    from app.models.simulator_usage import SimulatorUsage
+    rec = SimulatorUsage.increment(action, label)
+    return jsonify({
+        "status": "success",
+        "usage": rec.to_dict() if rec else None
+    }), 200
+
+
 @simulator_bp.route("/reset", methods=["POST"])
 def reset_simulation():
     """

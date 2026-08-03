@@ -15,6 +15,7 @@ from app.models.pole import Pole
 from app.models.device import Device
 from app.models.telemetry import Telemetry
 from app.models.ticket import Ticket
+from app.models.simulator_usage import SimulatorUsage
 
 __all__ = [
     "BaseModel",
@@ -32,4 +33,5 @@ __all__ = [
     "Device",
     "Telemetry",
     "Ticket",
+    "SimulatorUsage",
 ]

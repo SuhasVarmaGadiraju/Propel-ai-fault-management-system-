@@ -205,27 +205,30 @@ class AnalyticsService:
 
     @classmethod
     def get_simulator_analytics(cls) -> Dict[str, Any]:
-        """Aggregates execution metrics from simulation history."""
-        history = SimulatorService.get_history()
-        total_simulations = len(history)
+        """Aggregates execution metrics from persistent SimulatorUsage database records."""
+        from app.models.simulator_usage import SimulatorUsage
+        records = SimulatorUsage.query.all()
 
+        usage_dict: Dict[str, Dict[str, Any]] = {}
+        total_executions = 0
         scenario_counts: Dict[str, int] = {}
-        durations: List[float] = []
-        tickets_created_sum = 0
 
-        for h in history:
-            scen_id = h.get("scenario_id", "unknown")
-            scenario_counts[scen_id] = scenario_counts.get(scen_id, 0) + 1
-            durations.append(h.get("duration_ms", 0.0))
-            tickets_created_sum += h.get("tickets_created", 0)
-
-        avg_duration = round(sum(durations) / len(durations), 1) if durations else 0.0
+        for rec in records:
+            usage_dict[rec.scenario_key] = {
+                "key": rec.scenario_key,
+                "label": rec.label,
+                "count": rec.execution_count,
+                "last_executed_at": rec.last_executed_at.isoformat() if rec.last_executed_at else None
+            }
+            total_executions += rec.execution_count
+            scenario_counts[rec.scenario_key] = rec.execution_count
 
         return {
-            "total_simulations": total_simulations,
+            "total_executions": total_executions,
+            "total_simulations": total_executions,
+            "usage": usage_dict,
             "scenario_counts": scenario_counts,
-            "avg_duration_ms": avg_duration,
-            "tickets_created_sum": tickets_created_sum
+            "records": [rec.to_dict() for rec in records]
         }
 
     @classmethod

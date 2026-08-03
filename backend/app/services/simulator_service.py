@@ -10,6 +10,7 @@ from app.services.telemetry_ingestion_service import TelemetryIngestionService
 from app.services.network_graph_service import NetworkGraphService, PoleNode, TransformerNode, FeederNode
 from app.services.fault_localization_service import FaultLocalizationService
 from app.services.ticket_service import TicketService
+from app.models.simulator_usage import SimulatorUsage
 
 logger = logging.getLogger("simulator_service")
 
@@ -208,6 +209,16 @@ class SimulatorService:
         telemetry_payloads: List[Dict[str, Any]] = []
         scenario_name = scenario_id.replace("_", " ").title()
 
+        # Track persistent execution counter
+        if scenario_id in ("small_span_fault", "large_span_fault", "feeder_failure", "transformer_failure"):
+            SimulatorUsage.increment("power_loss", "Power Loss")
+        elif scenario_id == "restore_network":
+            SimulatorUsage.increment("restore_network", "Power Restored")
+        elif scenario_id == "out_of_order_telemetry":
+            SimulatorUsage.increment("out_of_order", "Out-of-Order")
+        else:
+            SimulatorUsage.increment(scenario_id, scenario_name)
+
         # Build telemetry payloads according to scenario logic
         if scenario_id == "feeder_failure":
             scenario_name = "11kV Feeder Main Trunk Trip"
@@ -347,6 +358,7 @@ class SimulatorService:
         Restores power across specified target or entire network by ingesting power_restored telemetry,
         re-running fault analysis, and auto-verifying RESOLVED tickets.
         """
+        SimulatorUsage.increment("restore_network", "Power Restored")
         start_time = time.time()
         logger.info("[Simulator] Scenario selected: restore_network")
 
@@ -427,6 +439,7 @@ class SimulatorService:
         Generates and ingests cascading telemetry packets for a target pole and all its downstream descendants
         in upstream-to-downstream topological order.
         """
+        SimulatorUsage.increment("propagation", "Propagation Tests")
         start_time = time.time()
         graph_service = NetworkGraphService.get_instance()
         if not graph_service.is_built():

@@ -126,6 +126,7 @@ const TelemetryTester = () => {
 
   // 2. Duplicate Test: Sends exact same packet again
   const handleDuplicateTest = async () => {
+    apiClient.post('/simulator/track', { action: 'duplicate', label: 'Duplicate Packets' }).catch(() => {});
     const payload = {
       device_id: deviceId,
       pole_id: poleId,
@@ -142,6 +143,7 @@ const TelemetryTester = () => {
 
   // 3. Out-of-Order Test: Dynamically generates a new unique high sequence number on every run
   const handleOutOfOrderTest = async () => {
+    apiClient.post('/simulator/track', { action: 'out_of_order', label: 'Out-of-Order' }).catch(() => {});
     const now = new Date().toISOString();
     // Generate a random unique high sequence number (e.g. between 10000 and 90000) on each click
     const highSeq = Math.floor(Math.random() * 80000) + 10000;
@@ -206,6 +208,7 @@ const TelemetryTester = () => {
 
   // 5. Error Validation Tests
   const handleTestInvalidDevice = () => {
+    apiClient.post('/simulator/track', { action: 'validation_test', label: 'Validation Tests' }).catch(() => {});
     const payload = {
       device_id: '',
       pole_id: poleId,
@@ -218,6 +221,7 @@ const TelemetryTester = () => {
   };
 
   const handleTestInvalidPole = () => {
+    apiClient.post('/simulator/track', { action: 'validation_test', label: 'Validation Tests' }).catch(() => {});
     const payload = {
       device_id: deviceId,
       pole_id: 'POL-NONEXISTENT-999',
@@ -230,6 +234,7 @@ const TelemetryTester = () => {
   };
 
   const handleTestMissingFields = () => {
+    apiClient.post('/simulator/track', { action: 'validation_test', label: 'Validation Tests' }).catch(() => {});
     const payload = {
       device_id: deviceId,
       pole_id: poleId,
@@ -240,6 +245,7 @@ const TelemetryTester = () => {
   };
 
   const handleTestInvalidTimestamp = () => {
+    apiClient.post('/simulator/track', { action: 'validation_test', label: 'Validation Tests' }).catch(() => {});
     const payload = {
       device_id: deviceId,
       pole_id: poleId,

@@ -320,20 +320,46 @@ const AnalyticsPage = () => {
 
         {/* 5. Simulator Scenario Usage */}
         <Card className="p-5 space-y-4 lg:col-span-2">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
-            <FiTrendingUp className="w-4 h-4 text-brand-600" />
-            Simulator Scenario Execution Usage
-          </h3>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-            {simStats?.scenario_counts ? (
-              Object.entries(simStats.scenario_counts).map(([scen, count]) => (
-                <div key={scen} className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase block font-mono">{scen}</span>
-                  <span className="text-lg font-bold font-mono text-slate-900">{count} runs</span>
-                </div>
-              ))
+          <div className="flex items-center justify-between">
+            <h3 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+              <FiTrendingUp className="w-4 h-4 text-brand-600" />
+              Simulator Scenario Execution Usage
+            </h3>
+            {(simStats?.total_executions ?? 0) > 0 && (
+              <span className="text-xs font-mono font-bold text-brand-700 bg-brand-50 border border-brand-200 px-2.5 py-0.5 rounded-full">
+                {simStats.total_executions} Total Executions
+              </span>
+            )}
+          </div>
+
+          <div className="space-y-3 text-xs">
+            {simStats?.usage && Object.keys(simStats.usage).length > 0 && (simStats.total_executions ?? 0) > 0 ? (
+              Object.entries(simStats.usage).map(([key, item]) => {
+                const label = item.label || key.replace('_', ' ').replace(/\b\w/g, c => c.toUpperCase());
+                const count = item.count || 0;
+                const total = simStats.total_executions || 1;
+                const percentage = Math.round((count / total) * 100);
+
+                return (
+                  <div key={key} className="space-y-1">
+                    <div className="flex justify-between items-center font-semibold">
+                      <span className="text-slate-700">{label}</span>
+                      <span className="font-mono text-slate-900 font-bold">{count}</span>
+                    </div>
+                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full bg-brand-600 rounded-full transition-all duration-500"
+                        style={{ width: `${percentage}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                );
+              })
             ) : (
-              <p className="text-slate-400 italic col-span-4">No simulation execution usage logged.</p>
+              <div className="text-center py-6 text-slate-400 text-xs bg-slate-50 border border-slate-200 rounded-xl space-y-1">
+                <p className="font-semibold text-slate-600">No simulator executions recorded yet.</p>
+                <p className="text-[11px] text-slate-400">Run scenarios via Telemetry Tester to track real-time simulation usage statistics.</p>
+              </div>
             )}
           </div>
         </Card>
