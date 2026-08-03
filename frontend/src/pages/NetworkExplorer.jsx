@@ -269,6 +269,7 @@ const NetworkExplorer = () => {
                   type="feeder"
                   onSelect={handleSelectNode}
                   selectedNodeId={selectedNode?.id}
+                  isSearchActive={Boolean(searchQuery.trim())}
                 />
               ))
             ) : (

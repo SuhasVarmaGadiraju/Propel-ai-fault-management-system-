@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   FiChevronRight,
   FiChevronDown,
@@ -13,8 +13,28 @@ import {
 /**
  * Recursive collapsible Tree Node component for the Network Explorer graph visualization.
  */
-const NetworkTreeNode = ({ node, type, onSelect, selectedNodeId }) => {
+const NetworkTreeNode = ({ node, type, onSelect, selectedNodeId, isSearchActive }) => {
   const [isExpanded, setIsExpanded] = useState(type === 'feeder' || type === 'transformer');
+  const [searchCollapsed, setSearchCollapsed] = useState(false);
+
+  // Reset search collapse override whenever search active status changes
+  useEffect(() => {
+    if (isSearchActive) {
+      setSearchCollapsed(false);
+    }
+  }, [isSearchActive]);
+
+  // When search query is active, automatically expand ancestor nodes; restore pre-search state when cleared
+  const expanded = isSearchActive ? !searchCollapsed : isExpanded;
+
+  const handleToggle = (e) => {
+    e.stopPropagation();
+    if (isSearchActive) {
+      setSearchCollapsed(!searchCollapsed);
+    } else {
+      setIsExpanded(!isExpanded);
+    }
+  };
 
   const isSelected = Boolean(node?.id && selectedNodeId === node.id);
 
@@ -60,13 +80,10 @@ const NetworkTreeNode = ({ node, type, onSelect, selectedNodeId }) => {
         <div className="flex items-center gap-2 overflow-hidden">
           {hasChildren ? (
             <button
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsExpanded(!isExpanded);
-              }}
+              onClick={handleToggle}
               className="p-0.5 rounded hover:bg-slate-200/60"
             >
-              {isExpanded ? (
+              {expanded ? (
                 <FiChevronDown className="w-3.5 h-3.5" />
               ) : (
                 <FiChevronRight className="w-3.5 h-3.5" />
@@ -118,7 +135,7 @@ const NetworkTreeNode = ({ node, type, onSelect, selectedNodeId }) => {
       </div>
 
       {/* Render Subtree Children recursively */}
-      {isExpanded && hasChildren && (
+      {expanded && hasChildren && (
         <div className="pl-4 ml-2 border-l border-slate-200 space-y-0.5 mt-0.5">
           {children.map((childNode) => {
             const nextType =
@@ -130,6 +147,7 @@ const NetworkTreeNode = ({ node, type, onSelect, selectedNodeId }) => {
                 type={nextType}
                 onSelect={onSelect}
                 selectedNodeId={selectedNodeId}
+                isSearchActive={isSearchActive}
               />
             );
           })}
