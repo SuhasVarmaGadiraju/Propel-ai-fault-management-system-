@@ -221,6 +221,26 @@ class TelemetryIngestionService:
 
             print("Telemetry inserted successfully")
 
+            # Incremental in-memory graph cache update (O(1)) after successful commit
+            try:
+                from app.services.network_graph_service import NetworkGraphService
+                graph = NetworkGraphService.get_instance()
+                if graph.is_built():
+                    event_val = data["event"].value if hasattr(data["event"], "value") else str(data["event"])
+                    ts_iso = data["event_timestamp"].isoformat() if data["event_timestamp"] else None
+                    graph.update_pole_telemetry(
+                        pole_id_or_code=pole.pole_code,
+                        energized=data["energized"],
+                        last_event=event_val,
+                        last_sequence=data["sequence_number"],
+                        battery_mv=data["battery_mv"],
+                        last_rssi=data["rssi"],
+                        last_seen=ts_iso,
+                        out_of_order=out_of_order
+                    )
+            except Exception as graph_err:
+                logger.warning(f"Failed to incrementally update graph cache: {graph_err}")
+
             logger.info("STEP 7: Success")
             return {
                 "status": "success",

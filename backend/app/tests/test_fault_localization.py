@@ -321,3 +321,30 @@ def test_fault_localization_rest_apis_with_confidence_and_reasoning(client):
     assert "possible_fault_range" in fault
     assert "reasoning" in fault
     assert isinstance(fault["reasoning"], list)
+
+
+def test_scenario_root_span_fault(app_with_fault_data):
+    """Scenario 6: Root pole P-TEST-A dark along with child P-TEST-B -> Root Span Fault."""
+    with app_with_fault_data.app_context():
+        # Set root pole A to dark (along with child B & grandchild C)
+        dev_a = Device.query.filter_by(device_id="DEV-A").first()
+        dev_a.energized = False
+        db.session.commit()
+
+        NetworkGraphService.get_instance().refresh_graph()
+
+        results = FaultLocalizationService.analyze_network()
+        incidents = results["incidents"]
+
+        assert len(incidents) >= 1
+        root_faults = [i for i in incidents if i["fault_type"] == "ROOT_SPAN_FAULT"]
+        assert len(root_faults) == 1
+
+        rf = root_faults[0]
+        assert rf["fault_type"] == "ROOT_SPAN_FAULT"
+        assert rf["downstream_pole"] == "P-TEST-A"
+        assert rf["upstream_pole"] is None
+        assert "P-TEST-A" in rf["affected_poles"]
+        assert "P-TEST-B" in rf["affected_poles"]
+        assert rf["confidence"] >= 80
+        assert len(rf["reasoning"]) >= 4

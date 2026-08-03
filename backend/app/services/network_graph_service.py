@@ -376,6 +376,37 @@ class NetworkGraphService:
         """Force rebuilds the in-memory graph."""
         return self.build_graph(force_rebuild=True)
 
+    def update_pole_telemetry(
+        self,
+        pole_id_or_code: str,
+        energized: bool,
+        last_event: Optional[str],
+        last_sequence: Optional[int],
+        battery_mv: Optional[int],
+        last_rssi: Optional[int],
+        last_seen: Optional[str],
+        out_of_order: bool = False,
+    ) -> bool:
+        """
+        Incrementally mutates in-memory PoleNode telemetry fields in O(1) time
+        without rebuilding or invalidating the graph cache.
+        """
+        if not self.is_built():
+            return False
+
+        pole_node = self._poles.get(str(pole_id_or_code))
+        if not pole_node:
+            return False
+
+        pole_node.energized = energized
+        pole_node.last_event = last_event
+        pole_node.last_sequence = last_sequence
+        pole_node.battery_mv = battery_mv
+        pole_node.last_rssi = last_rssi
+        pole_node.last_seen = last_seen
+        pole_node.out_of_order = out_of_order
+        return True
+
     # -------------------------------------------------------------------
     # Query & Traversal Helper Methods
     # -------------------------------------------------------------------

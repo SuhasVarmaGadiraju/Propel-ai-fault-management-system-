@@ -216,6 +216,55 @@ class FaultLocalizationService:
                     incident_counter += 1
                     continue
 
+                # Check Root Span Fault Detection (De-energized root pole with known topology)
+                for root_pole in tr.root_poles:
+                    if not root_pole.energized and root_pole.topology_known:
+                        descendants = graph_service.get_descendants(root_pole)
+                        # Ensure not a sensor anomaly (i.e. not dark root pole with ALL energized children)
+                        children_energized = any(c.energized for c in root_pole.children) if root_pole.children else False
+                        if not children_energized:
+                            dark_descendants = [d for d in descendants if not d.energized]
+                            affected_nodes = [root_pole] + dark_descendants
+                            affected_codes = [n.code for n in affected_nodes]
+
+                            confidence, conf_reason = cls.calculate_confidence(
+                                "ROOT_SPAN_FAULT",
+                                topology_known=True,
+                                affected_nodes=affected_nodes
+                            )
+
+                            reasoning = [
+                                f"Root Pole {root_pole.code} has no upstream parent pole in network tree topology.",
+                                f"Standard SPAN_FAULT detection requires an energized upstream parent, which cannot apply to root poles.",
+                                f"Root Pole {root_pole.code} is DE-ENERGIZED, but other transformers/feeders remain active.",
+                                f"Evaluated Feeder {feeder.code} and Transformer {tr.code} outage rules (did not match complete station outages).",
+                                f"Fault localized to transformer output / root span at Pole {root_pole.code}.",
+                                f"Confidence score {confidence}% ({conf_reason})."
+                            ]
+
+                            incident = {
+                                "incident_id": f"INC-RSPN-{incident_counter:04d}",
+                                "fault_type": "ROOT_SPAN_FAULT",
+                                "feeder_id": feeder.id,
+                                "feeder_code": feeder.code,
+                                "transformer_id": tr.id,
+                                "transformer_code": tr.code,
+                                "upstream_pole": None,
+                                "downstream_pole": root_pole.code,
+                                "possible_fault_range": [tr.code, root_pole.code],
+                                "affected_poles": affected_codes,
+                                "affected_poles_count": len(affected_codes),
+                                "estimated_households": len(affected_codes) * 4,
+                                "topology_known": True,
+                                "confidence": confidence,
+                                "confidence_reason": conf_reason,
+                                "reasoning": reasoning,
+                                "reason": f"Root span fault localized between Transformer {tr.code} output and Root Pole {root_pole.code}.",
+                                "detected_at": now_iso
+                            }
+                            incidents.append(incident)
+                            incident_counter += 1
+
                 # Span Fault & Sensor Anomaly Detection (Tree Traversal)
                 visited_poles = set()
                 for root_pole in tr.root_poles:
@@ -236,7 +285,7 @@ class FaultLocalizationService:
         cls._latest_anomalies = anomalies
         cls._analyzed_at = datetime.now(timezone.utc)
 
-        span_faults = sum(1 for i in incidents if i["fault_type"] in ("SPAN_FAULT", "UNKNOWN_SPAN"))
+        span_faults = sum(1 for i in incidents if i["fault_type"] in ("SPAN_FAULT", "UNKNOWN_SPAN", "ROOT_SPAN_FAULT"))
         transformer_faults = sum(1 for i in incidents if i["fault_type"] == "TRANSFORMER_FAULT")
         feeder_faults = sum(1 for i in incidents if i["fault_type"] == "FEEDER_FAULT")
         total_affected_poles = sum(i["affected_poles_count"] for i in incidents)
@@ -373,7 +422,7 @@ class FaultLocalizationService:
         if cls._analyzed_at is None:
             return cls.analyze_network()
 
-        span_faults = sum(1 for i in cls._latest_incidents if i["fault_type"] in ("SPAN_FAULT", "UNKNOWN_SPAN"))
+        span_faults = sum(1 for i in cls._latest_incidents if i["fault_type"] in ("SPAN_FAULT", "UNKNOWN_SPAN", "ROOT_SPAN_FAULT"))
         transformer_faults = sum(1 for i in cls._latest_incidents if i["fault_type"] == "TRANSFORMER_FAULT")
         feeder_faults = sum(1 for i in cls._latest_incidents if i["fault_type"] == "FEEDER_FAULT")
         total_affected_poles = sum(i["affected_poles_count"] for i in cls._latest_incidents)
