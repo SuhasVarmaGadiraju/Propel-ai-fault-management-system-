@@ -405,6 +405,15 @@ class NetworkGraphService:
         pole_node.last_rssi = last_rssi
         pole_node.last_seen = last_seen
         pole_node.out_of_order = out_of_order
+
+        print("\n" + "=" * 60)
+        print("[DEBUG update_pole_telemetry] Runtime PoleNode Updated:")
+        print("pole.code:", pole_node.code)
+        print("pole.energized:", pole_node.energized)
+        print("pole.last_event:", pole_node.last_event)
+        print("pole.last_sequence:", pole_node.last_sequence)
+        print("=" * 60 + "\n")
+
         return True
 
     # -------------------------------------------------------------------

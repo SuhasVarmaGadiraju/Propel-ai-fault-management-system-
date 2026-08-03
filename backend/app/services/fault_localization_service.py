@@ -84,6 +84,14 @@ class FaultLocalizationService:
 
         now_iso = datetime.now(timezone.utc).isoformat()
 
+        print("\n" + "=" * 80)
+        print("[DEBUG analyze_network] STARTING FAULT LOCALIZATION ANALYSIS")
+        print("graph.is_built():", graph_service.is_built())
+        print("number of feeders:", len(graph_service._feeders))
+        print("number of transformers:", len(graph_service._transformers))
+        print("number of poles:", len(graph_service._poles))
+        print("=" * 80 + "\n")
+
         # Iterate over all unique feeders in network
         unique_feeders = list({f.id: f for f in graph_service._feeders.values()}.values())
 
@@ -218,52 +226,79 @@ class FaultLocalizationService:
 
                 # Check Root Span Fault Detection (De-energized root pole with known topology)
                 for root_pole in tr.root_poles:
-                    if not root_pole.energized and root_pole.topology_known:
-                        descendants = graph_service.get_descendants(root_pole)
-                        # Ensure not a sensor anomaly (i.e. not dark root pole with ALL energized children)
-                        children_energized = any(c.energized for c in root_pole.children) if root_pole.children else False
-                        if not children_energized:
-                            dark_descendants = [d for d in descendants if not d.energized]
-                            affected_nodes = [root_pole] + dark_descendants
-                            affected_codes = [n.code for n in affected_nodes]
+                    descendants = graph_service.get_descendants(root_pole)
+                    children_energized = any(c.energized for c in root_pole.children) if root_pole.children else False
+                    children_states = [c.energized for c in root_pole.children]
+                    descendant_states = [d.energized for d in descendants]
 
-                            confidence, conf_reason = cls.calculate_confidence(
-                                "ROOT_SPAN_FAULT",
-                                topology_known=True,
-                                affected_nodes=affected_nodes
-                            )
+                    cond_1 = not root_pole.energized
+                    cond_2 = root_pole.topology_known
+                    cond_3 = not children_energized
+                    cond_4 = True  # Transformer fault not matched
+                    cond_5 = True  # Feeder fault not matched
 
-                            reasoning = [
-                                f"Root Pole {root_pole.code} has no upstream parent pole in network tree topology.",
-                                f"Standard SPAN_FAULT detection requires an energized upstream parent, which cannot apply to root poles.",
-                                f"Root Pole {root_pole.code} is DE-ENERGIZED, but other transformers/feeders remain active.",
-                                f"Evaluated Feeder {feeder.code} and Transformer {tr.code} outage rules (did not match complete station outages).",
-                                f"Fault localized to transformer output / root span at Pole {root_pole.code}.",
-                                f"Confidence score {confidence}% ({conf_reason})."
-                            ]
+                    print("-" * 60)
+                    print("[DEBUG analyze_network] Inspecting Root Pole:")
+                    print("feeder.code:", feeder.code)
+                    print("transformer.code:", tr.code)
+                    print("root_pole.code:", root_pole.code)
+                    print("root_pole.topology_known:", root_pole.topology_known)
+                    print("root_pole.energized:", root_pole.energized)
+                    print("len(root_pole.children):", len(root_pole.children))
+                    print("number of descendants:", len(descendants))
+                    print("children energized states:", children_states)
+                    print("descendants energized states:", descendant_states)
+                    print("\n[DEBUG ROOT_SPAN_FAULT Conditions]")
+                    print("Condition 1 (not root_pole.energized):", cond_1)
+                    print("Condition 2 (root_pole.topology_known):", cond_2)
+                    print("Condition 3 (not children_energized):", cond_3)
+                    print("Condition 4 (transformer fault not matched):", cond_4)
+                    print("Condition 5 (feeder fault not matched):", cond_5)
+                    print("ALL CONDITIONS EVALUATE TO:", cond_1 and cond_2 and cond_3 and cond_4 and cond_5)
+                    print("-" * 60)
 
-                            incident = {
-                                "incident_id": f"INC-RSPN-{incident_counter:04d}",
-                                "fault_type": "ROOT_SPAN_FAULT",
-                                "feeder_id": feeder.id,
-                                "feeder_code": feeder.code,
-                                "transformer_id": tr.id,
-                                "transformer_code": tr.code,
-                                "upstream_pole": None,
-                                "downstream_pole": root_pole.code,
-                                "possible_fault_range": [tr.code, root_pole.code],
-                                "affected_poles": affected_codes,
-                                "affected_poles_count": len(affected_codes),
-                                "estimated_households": len(affected_codes) * 4,
-                                "topology_known": True,
-                                "confidence": confidence,
-                                "confidence_reason": conf_reason,
-                                "reasoning": reasoning,
-                                "reason": f"Root span fault localized between Transformer {tr.code} output and Root Pole {root_pole.code}.",
-                                "detected_at": now_iso
-                            }
-                            incidents.append(incident)
-                            incident_counter += 1
+                    if cond_1 and cond_2 and cond_3:
+                        dark_descendants = [d for d in descendants if not d.energized]
+                        affected_nodes = [root_pole] + dark_descendants
+                        affected_codes = [n.code for n in affected_nodes]
+
+                        confidence, conf_reason = cls.calculate_confidence(
+                            "ROOT_SPAN_FAULT",
+                            topology_known=True,
+                            affected_nodes=affected_nodes
+                        )
+
+                        reasoning = [
+                            f"Root Pole {root_pole.code} has no upstream parent pole in network tree topology.",
+                            f"Standard SPAN_FAULT detection requires an energized upstream parent, which cannot apply to root poles.",
+                            f"Root Pole {root_pole.code} is DE-ENERGIZED, but other transformers/feeders remain active.",
+                            f"Evaluated Feeder {feeder.code} and Transformer {tr.code} outage rules (did not match complete station outages).",
+                            f"Fault localized to transformer output / root span at Pole {root_pole.code}.",
+                            f"Confidence score {confidence}% ({conf_reason})."
+                        ]
+
+                        incident = {
+                            "incident_id": f"INC-RSPN-{incident_counter:04d}",
+                            "fault_type": "ROOT_SPAN_FAULT",
+                            "feeder_id": feeder.id,
+                            "feeder_code": feeder.code,
+                            "transformer_id": tr.id,
+                            "transformer_code": tr.code,
+                            "upstream_pole": None,
+                            "downstream_pole": root_pole.code,
+                            "possible_fault_range": [tr.code, root_pole.code],
+                            "affected_poles": affected_codes,
+                            "affected_poles_count": len(affected_codes),
+                            "estimated_households": len(affected_codes) * 4,
+                            "topology_known": True,
+                            "confidence": confidence,
+                            "confidence_reason": conf_reason,
+                            "reasoning": reasoning,
+                            "reason": f"Root span fault localized between Transformer {tr.code} output and Root Pole {root_pole.code}.",
+                            "detected_at": now_iso
+                        }
+                        incidents.append(incident)
+                        incident_counter += 1
 
                 # Span Fault & Sensor Anomaly Detection (Tree Traversal)
                 visited_poles = set()

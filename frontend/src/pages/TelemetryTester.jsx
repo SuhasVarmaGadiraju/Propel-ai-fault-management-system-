@@ -30,6 +30,7 @@ const TelemetryTester = () => {
   const [batteryMv, setBatteryMv] = useState(3480);
   const [rssi, setRssi] = useState(-91);
   const [firmware, setFirmware] = useState('1.4.2');
+  const [propagateOutage, setPropagateOutage] = useState(false);
 
   // Diagnostics output state
   const [requestConsole, setRequestConsole] = useState(null);
@@ -73,19 +74,54 @@ const TelemetryTester = () => {
   };
 
   // 1. Send Current Custom Telemetry
-  const handleSendCustom = () => {
-    const payload = {
-      device_id: deviceId,
-      pole_id: poleId,
-      event,
-      energized,
-      ts: new Date().toISOString(),
-      seq: Number(seq),
-      battery_mv: Number(batteryMv),
-      rssi: Number(rssi),
-      fw: firmware
-    };
-    sendPayload(payload);
+  const handleSendCustom = async () => {
+    if (propagateOutage) {
+      setIsSending(true);
+      setRequestConsole({
+        pole_id: poleId,
+        energized,
+        event,
+        seq: Number(seq),
+        battery_mv: Number(batteryMv),
+        rssi: Number(rssi),
+        propagate_outage: true
+      });
+      setResponseConsole(null);
+      setStatusCode(null);
+
+      try {
+        const response = await apiClient.post('/simulator/propagate', {
+          pole_id: poleId,
+          energized,
+          event,
+          seq: Number(seq)
+        });
+        setStatusCode(200);
+        setResponseConsole(response);
+      } catch (err) {
+        setStatusCode(err?.status || 400);
+        setResponseConsole({
+          error: err?.message || 'Propagation request failed',
+          status: err?.status
+        });
+      } finally {
+        setIsSending(false);
+        fetchStatistics();
+      }
+    } else {
+      const payload = {
+        device_id: deviceId,
+        pole_id: poleId,
+        event,
+        energized,
+        ts: new Date().toISOString(),
+        seq: Number(seq),
+        battery_mv: Number(batteryMv),
+        rssi: Number(rssi),
+        fw: firmware
+      };
+      await sendPayload(payload);
+    }
   };
 
   // 2. Duplicate Test: Sends exact same packet again
@@ -355,17 +391,33 @@ const TelemetryTester = () => {
               </div>
             </div>
 
-            <div className="flex items-center gap-2 pt-1">
-              <input
-                type="checkbox"
-                id="energized-check"
-                checked={energized}
-                onChange={(e) => setEnergized(e.target.checked)}
-                className="w-4 h-4 text-brand-600 rounded"
-              />
-              <label htmlFor="energized-check" className="font-semibold text-slate-700 cursor-pointer">
-                Energized (Power Active)
-              </label>
+            <div className="space-y-2 pt-1">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="energized-check"
+                  checked={energized}
+                  onChange={(e) => setEnergized(e.target.checked)}
+                  className="w-4 h-4 text-brand-600 rounded cursor-pointer"
+                />
+                <label htmlFor="energized-check" className="font-semibold text-slate-700 cursor-pointer">
+                  Energized (Power Active)
+                </label>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="propagate-check"
+                  checked={propagateOutage}
+                  onChange={(e) => setPropagateOutage(e.target.checked)}
+                  className="w-4 h-4 text-amber-600 rounded cursor-pointer"
+                />
+                <label htmlFor="propagate-check" className="font-semibold text-slate-800 cursor-pointer text-xs flex items-center gap-1.5">
+                  <FiZap className="w-3.5 h-3.5 text-amber-600" />
+                  Propagate outage to downstream poles
+                </label>
+              </div>
             </div>
           </div>
 

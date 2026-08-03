@@ -108,6 +108,45 @@ def restore_power():
         }), 500
 
 
+@simulator_bp.route("/propagate", methods=["POST"])
+def propagate_outage():
+    """
+    POST /api/v1/simulator/propagate
+    Generates and ingests cascading telemetry packets for a target pole and all its downstream descendants.
+    """
+    payload = request.get_json(silent=True) or {}
+    pole_ref = payload.get("pole_id") or payload.get("pole_code") or payload.get("target_id")
+    energized = payload.get("energized", False)
+    event = payload.get("event")
+    seq = payload.get("seq")
+
+    if not pole_ref:
+        return jsonify({
+            "status": "error",
+            "message": "Missing required parameter 'pole_id' or 'pole_code'."
+        }), 400
+
+    try:
+        result = SimulatorService.propagate_outage(
+            pole_ref=pole_ref,
+            energized=bool(energized),
+            event=event,
+            base_seq=int(seq) if seq is not None else None
+        )
+        return jsonify(result), 200
+    except ValueError as val_err:
+        return jsonify({
+            "status": "error",
+            "message": str(val_err)
+        }), 400
+    except Exception as exc:
+        logger.error(f"[Simulator] Exception in propagate_outage: {exc}\n{traceback.format_exc()}")
+        return jsonify({
+            "status": "error",
+            "message": str(exc)
+        }), 500
+
+
 @simulator_bp.route("/reset", methods=["POST"])
 def reset_simulation():
     """

@@ -416,6 +416,102 @@ class SimulatorService:
         }
 
     @classmethod
+    def propagate_outage(
+        cls,
+        pole_ref: str,
+        energized: bool,
+        event: Optional[str] = None,
+        base_seq: Optional[int] = None
+    ) -> Dict[str, Any]:
+        """
+        Generates and ingests cascading telemetry packets for a target pole and all its downstream descendants
+        in upstream-to-downstream topological order.
+        """
+        start_time = time.time()
+        graph_service = NetworkGraphService.get_instance()
+        if not graph_service.is_built():
+            graph_service.build_graph(force_rebuild=True)
+
+        target_pole = graph_service.get_pole(pole_ref)
+        if not target_pole:
+            all_poles = list(graph_service._poles.values())
+            for p in all_poles:
+                if p.code == pole_ref or p.id == pole_ref:
+                    target_pole = p
+                    break
+
+        if not target_pole:
+            raise ValueError(f"Pole '{pole_ref}' not found in NetworkGraph.")
+
+        descendants = graph_service.get_descendants(target_pole)
+        affected_poles = [target_pole] + descendants
+
+        now_iso = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        event_type = event or ("power_restored" if energized else "power_lost")
+
+        telemetry_payloads: List[Dict[str, Any]] = []
+        for idx, pole in enumerate(affected_poles):
+            if pole:
+                seq_num = (base_seq + idx * 2) if base_seq else ((pole.last_sequence or 100) + random.randint(1, 5))
+                telemetry_payloads.append(
+                    cls._make_payload(
+                        pole,
+                        pole.code,
+                        energized=energized,
+                        event=event_type,
+                        ts=now_iso,
+                        seq=seq_num
+                    )
+                )
+
+        logger.info(f"[Simulator] Propagating telemetry to {len(telemetry_payloads)} poles under {target_pole.code}.")
+
+        # Ingest cascading telemetry payloads
+        ingest_res, _ = TelemetryIngestionService.ingest_bulk(telemetry_payloads)
+
+        # Rebuild graph cache in memory to reflect fresh device telemetry states
+        graph_service.build_graph(force_rebuild=True)
+
+        # Propagate uninstrumented node states top-down
+        cls._propagate_uninstrumented_node_states(graph_service)
+
+        # Trigger Deterministic Fault Localization Engine
+        localization_res = FaultLocalizationService.analyze_network()
+        incidents = localization_res.get("incidents", [])
+
+        # Auto-generate Repair Tickets IF incidents exist
+        tickets_created = []
+        if incidents:
+            tickets_created = TicketService.process_fault_incidents(incidents)
+
+        elapsed_ms = round((time.time() - start_time) * 1000, 2)
+
+        history_entry = {
+            "id": f"SIM-{len(cls._history) + 1:04d}",
+            "scenario_id": "cascade_propagation",
+            "scenario_name": f"Cascading {'Restoration' if energized else 'Outage'} ({event_type})",
+            "target": target_pole.code,
+            "telemetry_injected": len(telemetry_payloads),
+            "incidents_detected": len(incidents),
+            "tickets_created": len(tickets_created),
+            "ticket_numbers": [t.ticket_number for t in tickets_created],
+            "duration_ms": elapsed_ms,
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        }
+        cls._history.insert(0, history_entry)
+
+        return {
+            "status": "success",
+            "message": f"Successfully propagated {'power restoration' if energized else 'power outage'} to {len(affected_poles)} poles under {target_pole.code}.",
+            "affected_poles_count": len(affected_poles),
+            "target_pole": target_pole.code,
+            "simulation": history_entry,
+            "ingestion": ingest_res,
+            "fault_localization": localization_res,
+            "tickets_created": [t.to_dict() for t in tickets_created]
+        }
+
+    @classmethod
     def reset_network(cls) -> Dict[str, Any]:
         """Resets network graph cache and clears active fault incidents."""
         logger.info("[Simulator] Resetting network cache and fault state.")
