@@ -139,12 +139,27 @@ class TelemetryIngestionService:
                 pole.current_device_id = device.device_id
 
             # Duplicate Detection Strategy: Check if (device_id, sequence_number) exists
+            print("=" * 60)
+            print("Incoming Device:", data["device_id_raw"])
+            print("Incoming Pole:", data["pole_id_raw"])
+            print("DB Device ID:", device.id)
+            print("Sequence:", data["sequence_number"])
+            print("=" * 60)
+
             existing_telemetry = Telemetry.query.filter_by(
                 device_id=device.id,
                 sequence_number=data["sequence_number"]
             ).first()
 
+            print("Existing telemetry:", existing_telemetry)
+
             if existing_telemetry:
+                print("Duplicate Record")
+                print("Telemetry ID:", existing_telemetry.id)
+                print("Device ID:", existing_telemetry.device_id)
+                print("Sequence:", existing_telemetry.sequence_number)
+                print("Timestamp:", existing_telemetry.event_timestamp)
+
                 db.session.rollback()
                 logger.info(f"Duplicate telemetry event detected for Device {device.device_id}, Seq {data['sequence_number']}.")
                 return {
@@ -153,6 +168,8 @@ class TelemetryIngestionService:
                     "device_id": device.device_id,
                     "sequence_number": data["sequence_number"]
                 }, 200
+
+            print("No duplicate found")
 
             # Out-of-Order Handling Strategy
             out_of_order = False
@@ -198,8 +215,14 @@ class TelemetryIngestionService:
                 if data["event"] == TelemetryEvent.HEARTBEAT:
                     device.last_heartbeat = data["event_timestamp"]
 
+            print("Saving telemetry")
+            print("Sequence:", telemetry.sequence_number)
+            print("Out of Order:", out_of_order)
+
             logger.info("STEP 6: Committing transaction")
             db.session.commit()
+
+            print("Telemetry inserted successfully")
 
             logger.info("STEP 7: Success")
             return {
