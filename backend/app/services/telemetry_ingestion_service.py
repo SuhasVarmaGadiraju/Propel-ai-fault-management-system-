@@ -102,9 +102,6 @@ class TelemetryIngestionService:
             ).first()
 
             if not pole:
-                pole = Pole.query.first()
-
-            if not pole:
                 db.session.rollback()
                 return {
                     "status": "error",
