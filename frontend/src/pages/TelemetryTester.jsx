@@ -104,16 +104,20 @@ const TelemetryTester = () => {
     await sendPayload(payload);
   };
 
-  // 3. Out-of-Order Test: Sends seq 2000, then seq 1900
+  // 3. Out-of-Order Test: Dynamically generates a new unique high sequence number on every run
   const handleOutOfOrderTest = async () => {
     const now = new Date().toISOString();
+    // Generate a random unique high sequence number (e.g. between 10000 and 90000) on each click
+    const highSeq = Math.floor(Math.random() * 80000) + 10000;
+    const lowerSeq = highSeq - 100;
+
     const payloadHighSeq = {
       device_id: deviceId,
       pole_id: poleId,
       event: 'heartbeat',
       energized: true,
       ts: now,
-      seq: 2000,
+      seq: highSeq,
       battery_mv: 4000,
       rssi: -60,
       fw: firmware
@@ -125,15 +129,15 @@ const TelemetryTester = () => {
       event: 'power_lost',
       energized: false,
       ts: new Date(Date.now() - 60000).toISOString(),
-      seq: 1900,
+      seq: lowerSeq,
       battery_mv: 3900,
       rssi: -70,
       fw: firmware
     };
 
-    // First send seq 2000
+    // First send packet with higher sequence number
     await sendPayload(payloadHighSeq);
-    // Then send older seq 1900
+    // Then send older packet with lower sequence number after 500ms delay
     setTimeout(() => {
       sendPayload(payloadOlderSeq);
     }, 500);
@@ -407,7 +411,7 @@ const TelemetryTester = () => {
                 Out-of-Order Sequence Test
               </h4>
               <p className="text-[11px] text-slate-500">
-                Sends seq 2000, then sends seq 1900 to verify backend out_of_order tagging.
+                Generates a unique high sequence number then sends a second packet with a lower sequence number to verify backend out_of_order tagging.
               </p>
               <button
                 onClick={handleOutOfOrderTest}
