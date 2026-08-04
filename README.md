@@ -26,17 +26,79 @@ This application provides a structured approach for smart grid monitoring:
 
 ---
 
-## Screenshots
+## Application Screenshots
 
-> *Add application screenshots here prior to submission.*
+---
 
-| Operational Dashboard | Interactive Network Explorer |
-| :---: | :---: |
-| `![Dashboard Placeholder](./docs/screenshots/dashboard.png)` | `![Network Explorer Placeholder](./docs/screenshots/network_explorer.png)` |
+## Dashboard
 
-| Fault Localization & Reasoning | System Settings & Administration |
-| :---: | :---: |
-| `![Faults Placeholder](./docs/screenshots/faults.png)` | `![Settings Placeholder](./docs/screenshots/settings.png)` |
+![Dashboard](./docs/screenshots/dashboard.png)
+
+The main monitoring dashboard providing a real-time overview of the electrical distribution network, including active faults, maintenance tickets, healthy devices, and live telemetry status.
+
+---
+
+## Pole Registry
+
+![Pole Registry](./docs/screenshots/pole_registry.png)
+
+Master registry containing all electrical poles, feeders, transformers, device associations, and network asset information with powerful search and filtering capabilities.
+
+---
+
+## Network Explorer
+
+![Network Explorer](./docs/screenshots/network_explorer.png)
+
+Interactive hierarchical network visualization that represents feeders, transformers, and pole relationships, enabling topology exploration and deterministic fault tracing.
+
+---
+
+## Live Telemetry
+
+![Live Telemetry](./docs/screenshots/telemetry.png)
+
+Real-time IoT telemetry monitoring page displaying incoming sensor data, power events, communication status, device health, and telemetry history.
+
+---
+
+## Telemetry Tester
+
+![Telemetry Tester](./docs/screenshots/telemetry_tester.png)
+
+Developer testing utility used to simulate telemetry events, inject faults, validate API behavior, test duplicate detection, sequence ordering, bulk ingestion, and fault propagation.
+
+---
+
+## Fault Detection
+
+![Fault Detection](./docs/screenshots/fault_detection.png)
+
+Deterministic fault localization engine that analyzes telemetry data to identify outage locations, estimate affected network segments, calculate confidence scores, and provide diagnostic explanations without using probabilistic AI reasoning.
+
+---
+
+## Repair Tickets
+
+![Repair Tickets](./docs/screenshots/repair_tickets.png)
+
+Automated maintenance ticket management system that creates, tracks, and monitors repair work orders generated from detected faults, including ticket priority, lifecycle status, engineer assignment, and restoration progress.
+
+---
+
+## Analytics
+
+![Analytics](./docs/screenshots/analytics.png)
+
+Operational analytics dashboard providing key performance indicators such as MTTR, network availability, outage statistics, telemetry trends, ticket distribution, simulator usage metrics, and exportable operational reports.
+
+---
+
+## System Settings
+
+![System Settings](./docs/screenshots/system_settings.png)
+
+Administrative control panel for monitoring system health, configuring fault detection parameters, simulator settings, notification preferences, REST API endpoints, maintenance utilities, and overall platform configuration.
 
 ---
 
