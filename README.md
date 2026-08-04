@@ -6,8 +6,8 @@ A software system for modeling electrical distribution networks, ingesting IoT t
 
 ## Public Deployment & Demo
 
-- **Live System URL**: `[Insert Public Deployment URL]`
-- **Video Walkthrough**: `[Insert 5-Minute Demo Video Link]`
+- **Live System URL**: `https://propel-ai-fault-management-system.onrender.com`
+- **Video Walkthrough**: `https://drive.google.com/drive/folders/19Q4dV5o6U9iq1BrJBG0qxe9Sup0egLnz?usp=sharing`
 
 ---
 
